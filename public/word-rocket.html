@@ -199,19 +199,22 @@
   }
   window.addEventListener('resize', resize);
 
-  // ===== Background themes =====
-  // Each theme renders sky gradient + parallax elements.
+  // ===== Background themes (scrolling parallax = rocket flies) =====
   let stars = [], clouds = [], grassBlades = [];
+  let scrollY = 0;
   function initBgElements() {
     stars = []; clouds = []; grassBlades = [];
-    for (let i=0;i<Math.floor(W*H/3000);i++) stars.push({
-      x:Math.random()*W, y:Math.random()*H*0.85, r:Math.random()*1.4+.3,
-      s:Math.random()*0.15+0.03, tw:Math.random()*Math.PI*2,
+    const SH = H * 2;
+    for (let i=0;i<Math.floor(W*SH/3000);i++) stars.push({
+      x:Math.random()*W, y:Math.random()*SH, r:Math.random()*1.4+.3,
+      tw:Math.random()*Math.PI*2,
       color: Math.random() > 0.85 ? '#fdc' : Math.random() > 0.7 ? '#cdf' : '#fff',
+      par: 0.3 + Math.random()*0.7,
     });
-    for (let i=0;i<6;i++) clouds.push({
-      x: Math.random()*W, y: 40 + Math.random()*H*0.4,
-      w: 80 + Math.random()*120, s: 0.1 + Math.random()*0.25, alpha: 0.5 + Math.random()*0.4,
+    for (let i=0;i<12;i++) clouds.push({
+      x: Math.random()*W, y: Math.random()*SH,
+      w: 80 + Math.random()*120, alpha: 0.5 + Math.random()*0.4,
+      par: 0.4 + Math.random()*0.6,
     });
     for (let i=0;i<Math.floor(W/8);i++) grassBlades.push({
       x: Math.random()*W, h: 8 + Math.random()*16, sway: Math.random()*Math.PI*2,
@@ -231,6 +234,13 @@
     "cosmic":      [["#0a0014", 0], ["#4ade80", 0.3], ["#a78bfa", 0.6], ["#67e8f9", 1]],
   };
 
+  // Vertical scroll speed per theme (pixels per frame downward)
+  const THEME_SCROLL = {
+    "meadow": 1.6, "blue-sky": 2.0, "sunset": 2.4, "twilight": 2.8,
+    "starry-night": 3.2, "space": 3.6, "nebula": 3.8, "galaxy": 4.0,
+    "blackhole": 4.2, "cosmic": 4.4,
+  };
+
   function drawBackground(theme, t) {
     bctx.clearRect(0,0,W,H);
     const stops = THEME_GRADIENTS[theme] || THEME_GRADIENTS["space"];
@@ -238,54 +248,56 @@
     stops.forEach(([c, p]) => g.addColorStop(p, c));
     bctx.fillStyle = g; bctx.fillRect(0, 0, W, H);
 
-    // Stars for night/space themes
+    scrollY += (THEME_SCROLL[theme] || 2);
+    const SH = H * 2;
+    const wrapY = (base, par) => {
+      const y = ((base + scrollY * par) % SH + SH) % SH;
+      return y > H ? y - SH : y;
+    };
+
     if (["starry-night","space","nebula","galaxy","blackhole","cosmic","twilight"].includes(theme)) {
       stars.forEach(s => {
         s.tw += 0.04;
         bctx.globalAlpha = 0.4 + Math.sin(s.tw)*0.5;
         bctx.fillStyle = s.color;
-        bctx.beginPath(); bctx.arc(s.x, s.y, s.r, 0, Math.PI*2); bctx.fill();
+        bctx.beginPath(); bctx.arc(s.x, wrapY(s.y, s.par), s.r, 0, Math.PI*2); bctx.fill();
       });
       bctx.globalAlpha = 1;
     }
 
-    // Clouds for sky/sunset
-    if (["blue-sky","sunset","meadow"].includes(theme)) {
+    if (["blue-sky","sunset","meadow","twilight"].includes(theme)) {
       clouds.forEach(c => {
-        c.x += c.s;
-        if (c.x - c.w > W) c.x = -c.w;
+        const y = wrapY(c.y, c.par);
         bctx.globalAlpha = c.alpha;
-        bctx.fillStyle = theme === "sunset" ? "#ffd1a4" : "#fff";
+        bctx.fillStyle = theme === "sunset" ? "#ffd1a4" : theme === "twilight" ? "#c8b8e8" : "#fff";
         bctx.beginPath();
-        bctx.arc(c.x, c.y, c.w*0.3, 0, Math.PI*2);
-        bctx.arc(c.x + c.w*0.3, c.y - c.w*0.08, c.w*0.32, 0, Math.PI*2);
-        bctx.arc(c.x + c.w*0.6, c.y, c.w*0.28, 0, Math.PI*2);
+        bctx.arc(c.x, y, c.w*0.3, 0, Math.PI*2);
+        bctx.arc(c.x + c.w*0.3, y - c.w*0.08, c.w*0.32, 0, Math.PI*2);
+        bctx.arc(c.x + c.w*0.6, y, c.w*0.28, 0, Math.PI*2);
         bctx.fill();
       });
       bctx.globalAlpha = 1;
     }
 
-    // Grass for meadow
+    // Ground grass for meadow: scrolls horizontally to simulate rushing past
     if (theme === "meadow") {
       grassBlades.forEach(b => {
         b.sway += 0.03;
+        const x = ((b.x - scrollY * 1.5) % W + W) % W;
         bctx.strokeStyle = "#2d5a1a";
         bctx.lineWidth = 2;
         bctx.beginPath();
-        bctx.moveTo(b.x, H);
-        bctx.lineTo(b.x + Math.sin(b.sway)*2, H - b.h);
+        bctx.moveTo(x, H);
+        bctx.lineTo(x + Math.sin(b.sway)*2, H - b.h);
         bctx.stroke();
       });
     }
 
-    // Black hole accretion
     if (theme === "blackhole") {
       const cx = W/2, cy = H*0.35;
       const grad = bctx.createRadialGradient(cx, cy, 10, cx, cy, 180);
-      grad.addColorStop(0, "#000");
-      grad.addColorStop(0.4, "#000");
-      grad.addColorStop(0.55, "#ff6b00");
-      grad.addColorStop(0.7, "#ffaa44");
+      grad.addColorStop(0, "#000"); grad.addColorStop(0.4, "#000");
+      grad.addColorStop(0.55, "#ff6b00"); grad.addColorStop(0.7, "#ffaa44");
       grad.addColorStop(1, "transparent");
       bctx.fillStyle = grad;
       bctx.beginPath(); bctx.arc(cx, cy, 180, 0, Math.PI*2); bctx.fill();
