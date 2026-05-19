@@ -376,9 +376,12 @@
     document.getElementById('start').classList.add('hidden');
     document.getElementById('end').classList.add('hidden');
     state.running = true;
+    // Takeoff sequence: ground visible, rocket sits on it, then lifts off.
+    scrollY = 0;
+    state.takeoff = { active: true, t0: performance.now(), duration: 2600 };
     const lvl = LEVELS[0];
     showBanner('LEVEL 1', lvl.name);
-    nextObject();
+    setTimeout(() => { state.takeoff.active = false; nextObject(); }, state.takeoff.duration);
     updateHUD();
   }
 
