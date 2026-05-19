@@ -430,17 +430,29 @@
     setTimeout(nextObject, 500);
   }
 
+  function speak(text) {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1.05; u.volume = muted ? 0 : 1;
+      window.speechSynthesis.speak(u);
+    } catch(e) {}
+  }
+
   function loseLife() {
     SFX.boom();
     state.lives--; state.combo = 0; state.attempted++;
+    const missedWord = state.current?.word;
     if (state.current) state.missed.push(state.current.word);
     state.rocket.shake = 30; state.rocket.exploding = 20;
     explode(state.rocket.x, state.rocket.y, ['#f00','#fa0','#ff0','#fff']);
-    showFeedback('-1 ❤  ' + (state.current?.word.toUpperCase() || ''), '#f33');
+    showFeedback('-1 ❤  ' + (missedWord?.toUpperCase() || ''), '#f33');
+    if (missedWord) speak(missedWord);
     state.current = null;
     updateHUD();
     if (state.lives <= 0) { setTimeout(()=>endGame(false), 900); return; }
-    setTimeout(nextObject, 1000);
+    setTimeout(nextObject, 1400);
   }
 
   function endGame(won) {
