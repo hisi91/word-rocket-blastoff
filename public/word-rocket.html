@@ -570,14 +570,33 @@
   resize();
   requestAnimationFrame(loop);
 
-  fetchLevels().then(levels => {
+  fetchLevels().then(async (levels) => {
     LEVELS = levels.filter(l => l.level_objects && l.level_objects.some(o => o.icon_path));
-    // Use the "rocket" icon from level-6 as the player's ship
     const rocketObj = LEVELS.flatMap(l => l.level_objects).find(o => o.word === 'rocket' && o.icon_path);
     rocketImg = rocketObj ? loadImg(rocketObj.icon_path) : null;
-    // Preload all icons
-    LEVELS.forEach(l => l.level_objects.forEach(o => loadImg(o.icon_path)));
-    document.getElementById('loadStatus').textContent = `${LEVELS.length} niveaux prêts`;
+
+    // Collect all icon paths to preload
+    const allPaths = [];
+    LEVELS.forEach(l => l.level_objects.forEach(o => { if (o.icon_path) allPaths.push(o.icon_path); }));
+
+    const statusEl = document.getElementById('loadStatus');
+    let loaded = 0;
+    const total = allPaths.length;
+    const updateStatus = () => {
+      const pct = Math.round((loaded / total) * 100);
+      statusEl.textContent = `Chargement des icônes… ${loaded}/${total} (${pct}%)`;
+    };
+    updateStatus();
+
+    // Preload all icons in parallel, resolve even on error so we don't hang
+    await Promise.all(allPaths.map(path => new Promise(resolve => {
+      const img = loadImg(path);
+      if (img.complete && img.naturalWidth > 0) { loaded++; updateStatus(); return resolve(); }
+      img.addEventListener('load',  () => { loaded++; updateStatus(); resolve(); }, { once: true });
+      img.addEventListener('error', () => { loaded++; updateStatus(); resolve(); }, { once: true });
+    })));
+
+    statusEl.textContent = `${LEVELS.length} niveaux prêts — ${total} icônes chargées`;
     document.getElementById('startBtn').disabled = false;
   }).catch(err => {
     document.getElementById('loadStatus').textContent = "Erreur de chargement : " + err.message;
