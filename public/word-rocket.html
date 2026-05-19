@@ -234,11 +234,11 @@
     "cosmic":      [["#0a0014", 0], ["#4ade80", 0.3], ["#a78bfa", 0.6], ["#67e8f9", 1]],
   };
 
-  // Vertical scroll speed per theme (pixels per frame downward)
+  // Vertical scroll speed per theme (pixels per frame). Higher = faster rocket ascent feel.
   const THEME_SCROLL = {
-    "meadow": 1.6, "blue-sky": 2.0, "sunset": 2.4, "twilight": 2.8,
-    "starry-night": 3.2, "space": 3.6, "nebula": 3.8, "galaxy": 4.0,
-    "blackhole": 4.2, "cosmic": 4.4,
+    "meadow": 3.5, "blue-sky": 4.2, "sunset": 5.0, "twilight": 5.8,
+    "starry-night": 6.5, "space": 7.2, "nebula": 7.8, "galaxy": 8.4,
+    "blackhole": 9.0, "cosmic": 9.5,
   };
 
   function drawBackground(theme, t) {
