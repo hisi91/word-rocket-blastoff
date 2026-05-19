@@ -669,7 +669,7 @@
   // ===== Speech =====
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   let recognition = null, recOn = false;
-  const LANGS = [['en','English','en-US'],['fr','Français','fr-FR'],['es','Español','es-ES']];
+  const LANGS = [['en','🇬🇧','en-US'],['fr','🇫🇷','fr-FR'],['es','🇪🇸','es-ES']];
   let langIdx = 0;
   function setupRec() {
     if (!SR) { document.getElementById('mic').style.display = 'none'; return; }
