@@ -613,6 +613,7 @@
     pctx.clearRect(0,0,W,H);
     fctx.clearRect(0,0,W,H);
     if (state.running) {
+      if (state.takeoff && (state.takeoff.active || takeoffProgress() < 1)) drawGround();
       drawRocket();
       if (state.current) drawFalling(state.current, t);
     }
