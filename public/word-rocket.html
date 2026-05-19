@@ -317,14 +317,54 @@
 
   // ===== Image cache =====
   const imgCache = new Map();
+  // Remove near-white background pixels from loaded icons (flood-fill from edges)
+  function keyOutWhite(img) {
+    try {
+      const w = img.naturalWidth, h = img.naturalHeight;
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const cx = c.getContext('2d'); cx.drawImage(img, 0, 0);
+      const id = cx.getImageData(0, 0, w, h); const d = id.data;
+      const isWhite = (i) => d[i] > 235 && d[i+1] > 235 && d[i+2] > 235;
+      const visited = new Uint8Array(w*h);
+      const stack = [];
+      for (let x = 0; x < w; x++) { stack.push(x, 0); stack.push(x, h-1); }
+      for (let y = 0; y < h; y++) { stack.push(0, y); stack.push(w-1, y); }
+      while (stack.length) {
+        const y = stack.pop(), x = stack.pop();
+        if (x<0||y<0||x>=w||y>=h) continue;
+        const p = y*w + x; if (visited[p]) continue;
+        const i = p*4; if (!isWhite(i)) continue;
+        visited[p] = 1; d[i+3] = 0;
+        stack.push(x+1,y, x-1,y, x,y+1, x,y-1);
+      }
+      // soften edge: pixels touching transparent that are still light → reduce alpha
+      for (let y = 1; y < h-1; y++) for (let x = 1; x < w-1; x++) {
+        const p = y*w + x, i = p*4;
+        if (d[i+3] === 0) continue;
+        if (d[i] > 220 && d[i+1] > 220 && d[i+2] > 220) {
+          if (visited[p-1]||visited[p+1]||visited[p-w]||visited[p+w]) d[i+3] = 80;
+        }
+      }
+      cx.putImageData(id, 0, 0);
+      return c;
+    } catch(e) { return img; }
+  }
   function loadImg(path) {
     if (!path) return null;
     if (imgCache.has(path)) return imgCache.get(path);
     const img = new Image();
     img.crossOrigin = "anonymous";
+    const wrap = { complete: false, naturalWidth: 0, naturalHeight: 0, _src: null };
+    img.onload = () => {
+      const processed = keyOutWhite(img);
+      wrap._src = processed;
+      wrap.naturalWidth = processed.width || img.naturalWidth;
+      wrap.naturalHeight = processed.height || img.naturalHeight;
+      wrap.complete = true;
+    };
     img.src = ICON_URL(path);
-    imgCache.set(path, img);
-    return img;
+    imgCache.set(path, wrap);
+    return wrap;
   }
 
   // Constant on-screen icon size regardless of source dimensions
