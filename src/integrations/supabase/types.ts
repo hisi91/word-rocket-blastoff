@@ -14,7 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      level_objects: {
+        Row: {
+          created_at: string
+          icon_path: string | null
+          id: string
+          level_id: number
+          word: string
+        }
+        Insert: {
+          created_at?: string
+          icon_path?: string | null
+          id?: string
+          level_id: number
+          word: string
+        }
+        Update: {
+          created_at?: string
+          icon_path?: string | null
+          id?: string
+          level_id?: number
+          word?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "level_objects_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      levels: {
+        Row: {
+          background_theme: string
+          created_at: string
+          fall_duration: number
+          folder_name: string
+          id: number
+          name: string
+          total_objects: number
+        }
+        Insert: {
+          background_theme: string
+          created_at?: string
+          fall_duration?: number
+          folder_name: string
+          id: number
+          name: string
+          total_objects?: number
+        }
+        Update: {
+          background_theme?: string
+          created_at?: string
+          fall_duration?: number
+          folder_name?: string
+          id?: number
+          name?: string
+          total_objects?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
