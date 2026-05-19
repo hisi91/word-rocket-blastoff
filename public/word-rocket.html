@@ -100,7 +100,7 @@
     <div class="title">WORD ROCKET</div>
     <div class="subtitle">Des objets tombent du ciel — devine le mot en anglais avant qu'ils ne touchent ta fusée.
       <br>Les noms ne sont PAS affichés : à toi de reconnaître l'icône !
-      <br>10 niveaux, du sol jusqu'au cosmos.</div>
+      <br>5 niveaux, du sol jusqu'au cosmos.</div>
     <div id="loadStatus" class="loading">Chargement des niveaux...</div>
     <button class="big" id="startBtn" disabled>START</button>
     <div class="subtitle">Cliquez ou appuyez sur ESPACE</div>
@@ -121,12 +121,33 @@
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlod3RoYXpqbmJ0b3ZvaGl6ZWdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDk1NzYsImV4cCI6MjA5NDc4NTU3Nn0.4DKOMT16JnOTIHuHOMqpcCPkLC6thIWQ7718mXaPQNQ";
   const ICON_URL = (path) => `${SUPABASE_URL}/storage/v1/object/public/game-icons/${path}`;
 
+  const LEVELS_CACHE_KEY = 'wr_levels_v2';
+  const LEVELS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
+
   async function fetchLevels() {
+    // Try localStorage cache first (instant load on repeat visits)
+    try {
+      const raw = localStorage.getItem(LEVELS_CACHE_KEY);
+      if (raw) {
+        const { ts, data } = JSON.parse(raw);
+        if (Date.now() - ts < LEVELS_CACHE_TTL && Array.isArray(data) && data.length) {
+          // Refresh in background, return cache immediately
+          refreshLevelsCache();
+          return data;
+        }
+      }
+    } catch {}
+    return refreshLevelsCache();
+  }
+
+  async function refreshLevelsCache() {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/levels?select=*,level_objects(word,icon_path)&order=id.asc`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
     });
     if (!r.ok) throw new Error("Failed to load levels");
-    return r.json();
+    const data = await r.json();
+    try { localStorage.setItem(LEVELS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch {}
+    return data;
   }
 
   // ===== Canvases =====
