@@ -529,8 +529,8 @@
 
   // ===== Render =====
   function drawImageContained(ctx, img, cx, cy, size) {
+    const src = img && img._src ? img._src : img;
     if (!img || !img.complete || !img.naturalWidth) {
-      // fallback placeholder while loading
       ctx.fillStyle = '#0ff8';
       ctx.fillRect(cx - size/2, cy - size/2, size, size);
       return;
@@ -538,7 +538,7 @@
     const iw = img.naturalWidth, ih = img.naturalHeight;
     const scale = size / Math.max(iw, ih);
     const w = iw * scale, h = ih * scale;
-    ctx.drawImage(img, cx - w/2, cy - h/2, w, h);
+    ctx.drawImage(src, cx - w/2, cy - h/2, w, h);
   }
 
   const GROUND_H = 80;
