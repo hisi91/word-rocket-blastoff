@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "game_icons_public_read" ON storage.objects;
