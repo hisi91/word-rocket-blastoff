@@ -20,10 +20,11 @@
   .level { color: #7cf; }
   .bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px;
     display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 10; }
-  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  .side-controls { position: absolute; left: 8px; bottom: 20px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+  .side-controls button { padding: 6px 8px; font-size: 12px; min-width: 40px; text-align: center; }
   #input { width: min(360px, 80vw); padding: 12px 16px; border: 2px solid #0ff;
     background: rgba(0,0,0,.7); color: #fff; font-family: inherit; font-size: 18px;
-    border-radius: 8px; outline: none; text-align: center; letter-spacing: 2px; }
+    border-radius: 8px; outline: none; text-align: center; letter-spacing: 2px; margin-bottom: 70px; }
   #input:focus { box-shadow: 0 0 12px #0ff; }
   button { font-family: inherit; cursor: pointer; padding: 8px 14px; border-radius: 8px;
     border: 2px solid #0ff; background: rgba(0,30,40,.7); color: #0ff; font-size: 14px; }
@@ -81,11 +82,11 @@
   <div class="bottom">
     <div id="spoken"></div>
     <input id="input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="devine l'objet..." />
-    <div class="row">
-      <button id="mic">🎤 MIC</button>
-      <button id="lang">🌐 EN</button>
-      <button id="mute">🔊</button>
-    </div>
+  </div>
+  <div class="side-controls">
+    <button id="mic">🎤</button>
+    <button id="lang">🌐</button>
+    <button id="mute">🔊</button>
   </div>
 
   <div class="feedback" id="feedback"></div>
@@ -452,7 +453,7 @@
     document.getElementById('end').classList.remove('hidden');
     const acc = state.attempted ? Math.round(100*state.correct/state.attempted) : 0;
     document.getElementById('endStats').innerHTML =
-      `Score : <b>${state.score}</b><br>Niveau atteint : <b>${state.levelIdx+1}/${LEVELS.length}</b><br>Réussite : <b>${acc}%</b>${won?'<br>🏆 VICTOIRE !':''}`;
+      `Score : <b>${state.score}</b><br>Niveau atteint : <b>${state.levelIdx+1}</b><br>Réussite : <b>${acc}%</b>${won?'<br>🏆 VICTOIRE !':''}`;
     const m = document.getElementById('missed');
     m.innerHTML = state.missed.length ? '<b>Mots à réviser :</b><br>' + state.missed.join(' · ') : '<i>Aucun mot raté ! 🌟</i>';
   }
