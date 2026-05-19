@@ -279,19 +279,7 @@
       bctx.globalAlpha = 1;
     }
 
-    // Ground grass for meadow: scrolls horizontally to simulate rushing past
-    if (theme === "meadow") {
-      grassBlades.forEach(b => {
-        b.sway += 0.03;
-        const x = ((b.x - scrollY * 1.5) % W + W) % W;
-        bctx.strokeStyle = "#2d5a1a";
-        bctx.lineWidth = 2;
-        bctx.beginPath();
-        bctx.moveTo(x, H);
-        bctx.lineTo(x + Math.sin(b.sway)*2, H - b.h);
-        bctx.stroke();
-      });
-    }
+    // (ground grass removed — no horizontal scrolling grass on meadow)
 
     if (theme === "blackhole") {
       const cx = W/2, cy = H*0.35;
