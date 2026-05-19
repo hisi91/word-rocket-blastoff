@@ -121,29 +121,58 @@
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlod3RoYXpqbmJ0b3ZvaGl6ZWdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDk1NzYsImV4cCI6MjA5NDc4NTU3Nn0.4DKOMT16JnOTIHuHOMqpcCPkLC6thIWQ7718mXaPQNQ";
   const ICON_URL = (path) => `${SUPABASE_URL}/storage/v1/object/public/game-icons/${path}`;
 
-  const LEVELS_CACHE_KEY = 'wr_levels_v2';
+  const LEVELS_CACHE_KEY = 'wr_levels_v3';
   const LEVELS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
+  const LEVELS_FETCH_TIMEOUT = 3500;
+  const DEFAULT_LEVELS = [
+    { id: 1, name: 'GROUND', total_objects: 5, folder_name: 'level-1', background_theme: 'meadow', fall_duration: 6, level_objects: [
+      { word: 'house', icon_path: 'level-1/house.webp' }, { word: 'tree', icon_path: 'level-1/tree.webp' }, { word: 'leaf', icon_path: 'level-1/leaf.webp' }, { word: 'bird', icon_path: 'level-1/bird.webp' }, { word: 'dog', icon_path: 'level-1/dog.webp' },
+    ] },
+    { id: 2, name: 'BLUE SKY', total_objects: 5, folder_name: 'level-2', background_theme: 'blue-sky', fall_duration: 5.5, level_objects: [
+      { word: 'cloud', icon_path: 'level-2/cloud.webp' }, { word: 'kite', icon_path: 'level-2/kite.webp' }, { word: 'plane', icon_path: 'level-2/plane.webp' }, { word: 'rainbow', icon_path: 'level-2/rainbow.webp' }, { word: 'balloon', icon_path: 'level-2/balloon.webp' },
+    ] },
+    { id: 3, name: 'SUNSET', total_objects: 5, folder_name: 'level-3', background_theme: 'sunset', fall_duration: 5, level_objects: [
+      { word: 'pelican', icon_path: 'level-3/pelican.webp' }, { word: 'seagull', icon_path: 'level-3/seagull.webp' }, { word: 'sailboat', icon_path: 'level-3/sailboat.webp' }, { word: 'shell', icon_path: 'level-3/shell.webp' }, { word: 'lighthouse', icon_path: 'level-3/lighthouse.webp' },
+    ] },
+    { id: 4, name: 'TWILIGHT', total_objects: 5, folder_name: 'level-4', background_theme: 'twilight', fall_duration: 4.6, level_objects: [
+      { word: 'bat', icon_path: 'level-4/bat.webp' }, { word: 'owl', icon_path: 'level-4/owl.webp' }, { word: 'firefly', icon_path: 'level-4/firefly.webp' }, { word: 'mountain', icon_path: 'level-4/mountain.webp' }, { word: 'lantern', icon_path: 'level-4/lantern.webp' },
+    ] },
+    { id: 5, name: 'STARRY NIGHT', total_objects: 5, folder_name: 'level-5', background_theme: 'starry-night', fall_duration: 4.2, level_objects: [
+      { word: 'comet', icon_path: 'level-5/comet.webp' }, { word: 'telescope', icon_path: 'level-5/telescope.webp' }, { word: 'constellation', icon_path: 'level-5/constellation.webp' }, { word: 'moon', icon_path: 'level-5/moon.webp' }, { word: 'planet', icon_path: 'level-5/planet.webp' },
+    ] },
+  ];
 
   async function fetchLevels() {
-    // Try localStorage cache first (instant load on repeat visits)
+    const cached = getCachedLevels();
+    if (cached) {
+      refreshLevelsCache().catch(() => {});
+      return cached;
+    }
+    try {
+      return await refreshLevelsCache();
+    } catch {
+      refreshLevelsCache().catch(() => {});
+      return DEFAULT_LEVELS;
+    }
+  }
+
+  function getCachedLevels() {
     try {
       const raw = localStorage.getItem(LEVELS_CACHE_KEY);
-      if (raw) {
-        const { ts, data } = JSON.parse(raw);
-        if (Date.now() - ts < LEVELS_CACHE_TTL && Array.isArray(data) && data.length) {
-          // Refresh in background, return cache immediately
-          refreshLevelsCache();
-          return data;
-        }
-      }
+      if (!raw) return null;
+      const { ts, data } = JSON.parse(raw);
+      if (Date.now() - ts < LEVELS_CACHE_TTL && Array.isArray(data) && data.length) return data;
     } catch {}
-    return refreshLevelsCache();
+    return null;
   }
 
   async function refreshLevelsCache() {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/levels?select=*,level_objects(word,icon_path)&order=id.asc`, {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), LEVELS_FETCH_TIMEOUT);
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/levels?select=id,name,total_objects,folder_name,background_theme,fall_duration,level_objects(word,icon_path)&id=lte.5&order=id.asc`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-    });
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout));
     if (!r.ok) throw new Error("Failed to load levels");
     const data = await r.json();
     try { localStorage.setItem(LEVELS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch {}
@@ -594,31 +623,19 @@
   fetchLevels().then(async (levels) => {
     LEVELS = levels.filter(l => l.level_objects && l.level_objects.some(o => o.icon_path));
     rocketImg = loadImg('shared/rocket.webp');
-
-    // Collect all icon paths to preload
-    const allPaths = [];
-    LEVELS.forEach(l => l.level_objects.forEach(o => { if (o.icon_path) allPaths.push(o.icon_path); }));
-
     const statusEl = document.getElementById('loadStatus');
-    let loaded = 0;
-    const total = allPaths.length;
-    const updateStatus = () => {
-      const pct = Math.round((loaded / total) * 100);
-      statusEl.textContent = `Chargement des icônes… ${loaded}/${total} (${pct}%)`;
-    };
-    updateStatus();
 
-    // Preload all icons in parallel, resolve even on error so we don't hang
-    await Promise.all(allPaths.map(path => new Promise(resolve => {
-      const img = loadImg(path);
-      if (img.complete && img.naturalWidth > 0) { loaded++; updateStatus(); return resolve(); }
-      img.addEventListener('load',  () => { loaded++; updateStatus(); resolve(); }, { once: true });
-      img.addEventListener('error', () => { loaded++; updateStatus(); resolve(); }, { once: true });
-    })));
+    // Start immediately: only warm image cache in the background.
+    const firstLevelPaths = LEVELS[0]?.level_objects?.map(o => o.icon_path).filter(Boolean) || [];
+    firstLevelPaths.forEach(loadImg);
+    setTimeout(() => LEVELS.forEach(l => l.level_objects.forEach(o => { if (o.icon_path) loadImg(o.icon_path); })), 300);
 
-    statusEl.textContent = `${LEVELS.length} niveaux prêts — ${total} icônes chargées`;
+    statusEl.textContent = `${LEVELS.length} niveaux prêts`;
     document.getElementById('startBtn').disabled = false;
   }).catch(err => {
     document.getElementById('loadStatus').textContent = "Erreur de chargement : " + err.message;
   });
 })();
+</script>
+</body>
+</html>
