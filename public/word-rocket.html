@@ -512,10 +512,49 @@
     ctx.drawImage(img, cx - w/2, cy - h/2, w, h);
   }
 
+  const GROUND_H = 80;
+  function takeoffProgress() {
+    if (!state.takeoff || !state.takeoff.active) return 1;
+    const p = (performance.now() - state.takeoff.t0) / state.takeoff.duration;
+    return Math.max(0, Math.min(1, p));
+  }
+  // ease-in-out cubic
+  const easeInOut = p => p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2, 3)/2;
+
+  function drawGround() {
+    const p = takeoffProgress();
+    // Ground slides down off-screen as rocket lifts
+    const eased = easeInOut(p);
+    const yTop = H - GROUND_H + eased * GROUND_H;
+    if (yTop >= H) return;
+    // grass strip
+    const g = pctx.createLinearGradient(0, yTop, 0, H);
+    g.addColorStop(0, '#86c45a'); g.addColorStop(0.4, '#5a9a3a'); g.addColorStop(1, '#3a7a2a');
+    pctx.fillStyle = g; pctx.fillRect(0, yTop, W, H - yTop);
+    // grass blades on top edge
+    pctx.strokeStyle = '#2d5a1a'; pctx.lineWidth = 2;
+    for (let x = 4; x < W; x += 10) {
+      const h = 6 + ((x*7) % 8);
+      pctx.beginPath(); pctx.moveTo(x, yTop); pctx.lineTo(x + 1, yTop - h); pctx.stroke();
+    }
+  }
+
   function drawRocket() {
     const r = state.rocket;
-    r.x = W/2; r.y = H - ROCKET_SIZE/2 - 20;
+    // Normal flying position
+    const normalY = H - ROCKET_SIZE/2 - 20;
+    // During takeoff, rocket sits on ground then lifts
+    const p = takeoffProgress();
+    const eased = easeInOut(p);
+    const groundedY = H - GROUND_H - ROCKET_SIZE/2 + 6; // resting on grass
+    r.x = W/2;
+    r.y = groundedY + (normalY - groundedY) * eased;
     let sx = 0, sy = 0;
+    // Pre-launch rumble
+    if (state.takeoff && state.takeoff.active && p < 0.35) {
+      const rumble = (0.35 - p) * 8;
+      sx = (Math.random()-.5)*rumble; sy = (Math.random()-.5)*rumble;
+    }
     if (r.shake > 0) { sx = (Math.random()-.5)*r.shake*0.5; sy = (Math.random()-.5)*r.shake*0.3; r.shake--; }
     if (state.current) {
       const remaining = 1 - ((state.current.y + ICON_SIZE/2) / (state.current.maxY + ICON_SIZE/2));
@@ -525,17 +564,19 @@
       r.exploding--;
       if (r.exploding % 4 < 2) return;
     }
-    // flame under rocket
-    const flameH = 22 + Math.sin(performance.now()/60)*10;
+    // flame under rocket (bigger during liftoff)
+    const liftBoost = state.takeoff && state.takeoff.active ? (1 + (1-p)*1.8) : 1;
+    const flameH = (22 + Math.sin(performance.now()/60)*10) * liftBoost;
+    const flameW = 14 * Math.min(1.6, liftBoost);
     const fg = pctx.createLinearGradient(0, r.y + ROCKET_SIZE/2 - 6, 0, r.y + ROCKET_SIZE/2 + flameH);
     fg.addColorStop(0,'#ff0'); fg.addColorStop(0.5,'#f80'); fg.addColorStop(1,'#f00');
     pctx.fillStyle = fg;
     pctx.beginPath();
-    pctx.moveTo(r.x - 14 + sx, r.y + ROCKET_SIZE/2 - 6 + sy);
-    pctx.lineTo(r.x + 14 + sx, r.y + ROCKET_SIZE/2 - 6 + sy);
-    pctx.lineTo(r.x + 8 + sx, r.y + ROCKET_SIZE/2 + flameH + sy);
+    pctx.moveTo(r.x - flameW + sx, r.y + ROCKET_SIZE/2 - 6 + sy);
+    pctx.lineTo(r.x + flameW + sx, r.y + ROCKET_SIZE/2 - 6 + sy);
+    pctx.lineTo(r.x + flameW*0.6 + sx, r.y + ROCKET_SIZE/2 + flameH + sy);
     pctx.lineTo(r.x + sx, r.y + ROCKET_SIZE/2 + flameH + 10 + sy);
-    pctx.lineTo(r.x - 8 + sx, r.y + ROCKET_SIZE/2 + flameH + sy);
+    pctx.lineTo(r.x - flameW*0.6 + sx, r.y + ROCKET_SIZE/2 + flameH + sy);
     pctx.closePath(); pctx.fill();
 
     drawImageContained(pctx, rocketImg, r.x + sx, r.y + sy, ROCKET_SIZE);
