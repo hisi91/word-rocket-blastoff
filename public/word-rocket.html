@@ -121,6 +121,20 @@
       <br>Les noms ne sont PAS affichés : à toi de reconnaître l'icône !
       <br>5 niveaux, du sol jusqu'au cosmos.</div>
     <div id="loadStatus" class="loading">Chargement des niveaux...</div>
+    <div class="start-options">
+      <label class="opt-row">
+        <span class="lbl">🔊 Prononcer le nom à l'apparition
+          <span class="hint">L'objet est lu à voix haute quand il apparaît</span>
+        </span>
+        <input type="checkbox" id="optSpeak" class="toggle" checked />
+      </label>
+      <div class="opt-row">
+        <span class="lbl">🎤 Activer le microphone<span class="req">requis</span>
+          <span class="hint">Nécessaire pour reconnaître ta voix</span>
+        </span>
+        <button type="button" id="optMic" class="mic-btn">Activer</button>
+      </div>
+    </div>
     <button class="big" id="startBtn" disabled>START</button>
     <div class="subtitle">Cliquez ou appuyez sur ESPACE</div>
   </div>
