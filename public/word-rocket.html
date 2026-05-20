@@ -946,7 +946,7 @@
   document.getElementById('mic').addEventListener('click', () => { unlockSpeech(); enableMic(); });
   document.getElementById('optMic').addEventListener('click', () => { unlockSpeech(); enableMic(true); });
   document.getElementById('optSpeak').addEventListener('change', e => { speakOnAppear = e.target.checked; });
-  document.getElementById('optText').addEventListener('change', e => { textInputEnabled = e.target.checked; });
+  document.getElementById('optText').addEventListener('change', e => { choicesEnabled = e.target.checked; });
   document.getElementById('lang').addEventListener('click', () => {
     unlockSpeech();
     langIdx = (langIdx+1) % LANGS.length;
@@ -958,15 +958,15 @@
     document.getElementById('mute').textContent = muted ? '🔇' : '🔊';
   });
 
-  document.getElementById('startBtn').addEventListener('click', () => { ensureAudio(); unlockSpeech(); startGame(); input.focus(); });
-  document.getElementById('replayBtn').addEventListener('click', () => { unlockSpeech(); startGame(); input.focus(); });
+  document.getElementById('startBtn').addEventListener('click', () => { ensureAudio(); unlockSpeech(); startGame(); });
+  document.getElementById('replayBtn').addEventListener('click', () => { unlockSpeech(); startGame(); });
   window.addEventListener('keydown', e => {
     if (e.code === 'Space' && !state.running) {
       e.preventDefault();
       if (!document.getElementById('start').classList.contains('hidden')) {
-        ensureAudio(); unlockSpeech(); startGame(); input.focus();
+        ensureAudio(); unlockSpeech(); startGame();
       } else if (!document.getElementById('end').classList.contains('hidden')) {
-        unlockSpeech(); startGame(); input.focus();
+        unlockSpeech(); startGame();
       }
     }
   });
