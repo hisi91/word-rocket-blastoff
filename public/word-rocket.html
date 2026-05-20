@@ -734,6 +734,15 @@
   const LANGS = [['en','🇬🇧','en'],['fr','🇫🇷','fr'],['es','🇪🇸','es']];
   let langIdx = 0;
   let micVad = null, recOn = false, busy = false;
+  let speakOnAppear = true;
+  let micReady = false, levelsReady = false;
+  function updateStartBtn() {
+    const btn = document.getElementById('startBtn');
+    btn.disabled = !(levelsReady && micReady);
+    const status = document.getElementById('loadStatus');
+    if (levelsReady && !micReady) status.textContent = "Active le micro pour démarrer";
+    else if (levelsReady && micReady) status.textContent = "Prêt à jouer !";
+  }
 
   // --- Fuzzy + phonetic scoring ---
   function levenshtein(a, b) {
