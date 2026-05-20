@@ -666,44 +666,153 @@
   });
   input.addEventListener('keydown', e => { if (e.key === 'Enter') checkWord(input.value); });
 
-  // ===== Speech =====
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let recognition = null, recOn = false;
-  const LANGS = [['en','🇬🇧','en-US'],['fr','🇫🇷','fr-FR'],['es','🇪🇸','es-ES']];
+  // ===== Speech (Whisper via /api/transcribe + Silero VAD + fuzzy IPA) =====
+  const LANGS = [['en','🇬🇧','en'],['fr','🇫🇷','fr'],['es','🇪🇸','es']];
   let langIdx = 0;
-  function setupRec() {
-    if (!SR) { document.getElementById('mic').style.display = 'none'; return; }
-    recognition = new SR();
-    recognition.continuous = true; recognition.interimResults = true;
-    recognition.lang = LANGS[langIdx][2];
-    recognition.onresult = e => {
-      let txt = '';
-      for (let i=e.resultIndex; i<e.results.length; i++) txt += e.results[i][0].transcript;
-      document.getElementById('spoken').textContent = '🎙 ' + txt;
-      txt.split(/\s+/).forEach(w => { if (w) checkWord(w); });
-    };
-    recognition.onerror = () => {};
-    recognition.onend = () => { if (recOn) try { recognition.start(); } catch(e){} };
-  }
-  setupRec();
+  let micVad = null, recOn = false, busy = false;
 
-  document.getElementById('mic').addEventListener('click', () => {
-    if (!recognition) return alert('Reconnaissance vocale non supportée.');
-    recOn = !recOn;
+  // --- Fuzzy + phonetic scoring ---
+  function levenshtein(a, b) {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    let prev = new Array(b.length + 1);
+    for (let j = 0; j <= b.length; j++) prev[j] = j;
+    for (let i = 1; i <= a.length; i++) {
+      let curr = [i];
+      for (let j = 1; j <= b.length; j++) {
+        const cost = a[i-1] === b[j-1] ? 0 : 1;
+        curr[j] = Math.min(prev[j] + 1, curr[j-1] + 1, prev[j-1] + cost);
+      }
+      prev = curr;
+    }
+    return prev[b.length];
+  }
+  // Pseudo-phonetic normalization (cross-language friendly, kid-tolerant)
+  function phon(s, lang) {
+    let x = (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    x = x.replace(/[^a-z]/g,'');
+    // common spelling → sound collapses
+    x = x.replace(/ph/g,'f').replace(/qu/g,'k').replace(/ck/g,'k').replace(/x/g,'ks');
+    x = x.replace(/ch/g, lang==='fr' ? 'sh' : 'tsh');
+    x = x.replace(/th/g,'t').replace(/wh/g,'w');
+    x = x.replace(/y/g,'i').replace(/[jg](?=[eiy])/g,'j');
+    x = x.replace(/c(?=[eiy])/g,'s').replace(/c/g,'k');
+    x = x.replace(/z/g,'s');
+    x = x.replace(/h/g,'');                  // mute h
+    x = x.replace(/(.)\1+/g,'$1');           // collapse doubles
+    x = x.replace(/[aeiou]+/g,'a');          // collapse vowels into one bucket
+    x = x.replace(/[^a-z]/g,'');
+    return x;
+  }
+  function score(spoken, expected, lang) {
+    const a = (spoken||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'');
+    const b = (expected||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,'');
+    if (!a || !b) return 0;
+    if (a === b) return 100;
+    // Raw Levenshtein ratio
+    const raw = 1 - levenshtein(a, b) / Math.max(a.length, b.length);
+    // Phonetic ratio (fallback hybride)
+    const pa = phon(a, lang), pb = phon(b, lang);
+    const phr = pa && pb ? 1 - levenshtein(pa, pb) / Math.max(pa.length, pb.length) : 0;
+    // Substring bonus (spoken contains the expected word)
+    const contains = a.includes(b) || b.includes(a) ? 0.15 : 0;
+    return Math.round(Math.min(1, Math.max(raw, phr) + contains) * 100);
+  }
+  const ACCEPT_THRESHOLD = 72; // % similarity needed to validate
+
+  // --- Recorder helper (VAD passes Float32 PCM 16kHz; we encode to WAV) ---
+  function pcmToWav(float32, sr) {
+    const len = float32.length;
+    const buf = new ArrayBuffer(44 + len * 2);
+    const dv = new DataView(buf);
+    const wstr = (o,s) => { for (let i=0;i<s.length;i++) dv.setUint8(o+i, s.charCodeAt(i)); };
+    wstr(0,'RIFF'); dv.setUint32(4, 36+len*2, true); wstr(8,'WAVE');
+    wstr(12,'fmt '); dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+    dv.setUint32(24,sr,true); dv.setUint32(28,sr*2,true); dv.setUint16(32,2,true); dv.setUint16(34,16,true);
+    wstr(36,'data'); dv.setUint32(40,len*2,true);
+    let off=44;
+    for (let i=0;i<len;i++,off+=2) {
+      const s = Math.max(-1, Math.min(1, float32[i]));
+      dv.setInt16(off, s<0 ? s*0x8000 : s*0x7fff, true);
+    }
+    return new Blob([buf], {type:'audio/wav'});
+  }
+
+  async function transcribe(blob) {
+    const fd = new FormData();
+    fd.append('audio', blob, 'speech.wav');
+    fd.append('language', LANGS[langIdx][0]);
+    if (state.current?.word) fd.append('prompt', state.current.word);
+    const r = await fetch('/api/transcribe', { method:'POST', body: fd });
+    if (!r.ok) throw new Error('STT ' + r.status);
+    return (await r.json()).text || '';
+  }
+
+  async function handleUtterance(float32) {
+    if (busy || !state.running) return;
+    busy = true;
+    try {
+      const wav = pcmToWav(float32, 16000);
+      const heard = (await transcribe(wav)).trim();
+      if (!heard) return;
+      const expected = state.current?.word || '';
+      const sc = score(heard, expected, LANGS[langIdx][0]);
+      document.getElementById('spoken').textContent = `🎙 ${heard} (${sc}%)`;
+      if (sc >= ACCEPT_THRESHOLD) checkWord(expected); // force-validate
+    } catch (e) {
+      document.getElementById('spoken').textContent = '⚠️ ' + e.message;
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function ensureVad() {
+    if (micVad) return micVad;
+    if (!window.vad) {
+      // Lazy-load Silero VAD (onnxruntime-web + vad-web from CDN)
+      await new Promise((res, rej) => {
+        const s1 = document.createElement('script');
+        s1.src = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/ort.min.js';
+        s1.onload = () => {
+          const s2 = document.createElement('script');
+          s2.src = 'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.24/dist/bundle.min.js';
+          s2.onload = res; s2.onerror = rej;
+          document.head.appendChild(s2);
+        };
+        s1.onerror = rej;
+        document.head.appendChild(s1);
+      });
+    }
+    micVad = await window.vad.MicVAD.new({
+      positiveSpeechThreshold: 0.6,
+      negativeSpeechThreshold: 0.35,
+      minSpeechFrames: 3,
+      preSpeechPadFrames: 4,
+      redemptionFrames: 8,
+      baseAssetPath: 'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.24/dist/',
+      onnxWASMBasePath: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/',
+      onSpeechEnd: (audio) => { handleUtterance(audio); },
+    });
+    return micVad;
+  }
+
+  document.getElementById('mic').addEventListener('click', async () => {
     const btn = document.getElementById('mic');
-    btn.classList.toggle('on', recOn);
-    btn.textContent = recOn ? '🎤 ON' : '🎤 MIC';
-    if (recOn) { try { recognition.start(); } catch(e){} } else recognition.stop();
+    try {
+      const v = await ensureVad();
+      recOn = !recOn;
+      btn.classList.toggle('on', recOn);
+      btn.textContent = recOn ? '🎤 ON' : '🎤';
+      if (recOn) v.start(); else v.pause();
+    } catch (e) {
+      btn.textContent = '🎤';
+      alert('Micro indisponible : ' + e.message);
+    }
   });
   document.getElementById('lang').addEventListener('click', () => {
     langIdx = (langIdx+1) % LANGS.length;
     document.getElementById('lang').textContent = LANGS[langIdx][1];
-    if (recognition) {
-      const wasOn = recOn;
-      if (recOn) { recOn = false; recognition.stop(); }
-      recognition.lang = LANGS[langIdx][2];
-      if (wasOn) { recOn = true; try { recognition.start(); } catch(e){} }
-    }
   });
   document.getElementById('mute').addEventListener('click', () => {
     muted = !muted;
