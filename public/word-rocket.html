@@ -557,6 +557,7 @@
     showFeedback('-1 ❤  ' + (missedWord?.toUpperCase() || ''), '#f33');
     if (missedWord) speak(missedWord);
     state.current = null;
+    input.style.display = 'none';
     updateHUD();
     if (state.lives <= 0) { setTimeout(()=>endGame(false), 900); return; }
     setTimeout(nextObject, 1400);
