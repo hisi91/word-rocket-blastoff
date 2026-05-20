@@ -432,7 +432,7 @@
     if (state.queue.length === 0) return null;
     const obj = state.queue.shift();
     const lvl = LEVELS[state.levelIdx];
-    const fall = Number(lvl.fall_duration) || 5;
+    const fall = (Number(lvl.fall_duration) || 5) / 0.7;
     const maxY = H - 140;
     return {
       word: obj.word, img: loadImg(obj.icon_path),
