@@ -792,6 +792,10 @@
       const sc = score(heard, expected, LANGS[langIdx][0]);
       document.getElementById('spoken').textContent = `🎙 ${heard} (${sc}%)`;
       if (sc >= ACCEPT_THRESHOLD) checkWord(expected); // force-validate
+      else if (expected) {
+        showFeedback('ÉCOUTE : ' + expected.toUpperCase(), '#fc6');
+        speak(expected);
+      }
     } catch (e) {
       document.getElementById('spoken').textContent = '⚠️ ' + e.message;
     } finally {
@@ -830,6 +834,7 @@
   }
 
   document.getElementById('mic').addEventListener('click', async () => {
+    unlockSpeech();
     const btn = document.getElementById('mic');
     try {
       const v = await ensureVad();
@@ -843,23 +848,25 @@
     }
   });
   document.getElementById('lang').addEventListener('click', () => {
+    unlockSpeech();
     langIdx = (langIdx+1) % LANGS.length;
     document.getElementById('lang').textContent = LANGS[langIdx][1];
   });
   document.getElementById('mute').addEventListener('click', () => {
+    unlockSpeech();
     muted = !muted;
     document.getElementById('mute').textContent = muted ? '🔇' : '🔊';
   });
 
-  document.getElementById('startBtn').addEventListener('click', () => { ensureAudio(); startGame(); input.focus(); });
-  document.getElementById('replayBtn').addEventListener('click', () => { startGame(); input.focus(); });
+  document.getElementById('startBtn').addEventListener('click', () => { ensureAudio(); unlockSpeech(); startGame(); input.focus(); });
+  document.getElementById('replayBtn').addEventListener('click', () => { unlockSpeech(); startGame(); input.focus(); });
   window.addEventListener('keydown', e => {
     if (e.code === 'Space' && !state.running) {
       e.preventDefault();
       if (!document.getElementById('start').classList.contains('hidden')) {
-        ensureAudio(); startGame(); input.focus();
+        ensureAudio(); unlockSpeech(); startGame(); input.focus();
       } else if (!document.getElementById('end').classList.contains('hidden')) {
-        startGame(); input.focus();
+        unlockSpeech(); startGame(); input.focus();
       }
     }
   });
