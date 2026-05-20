@@ -465,17 +465,42 @@
   }
 
   const LANG_BCP = { en: 'en-US', fr: 'fr-FR', es: 'es-ES' };
+  let speechUnlocked = false, speakingWord = false;
+  function currentLangCode() { return LANGS[langIdx]?.[0] || 'en'; }
+  function buildUtterance(text, volume = 1) {
+    const code = currentLangCode();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = LANG_BCP[code] || 'en-US';
+    u.rate = 0.82; u.pitch = 1.05; u.volume = muted ? 0 : volume;
+    const voices = window.speechSynthesis.getVoices();
+    const v = voices.find(v => v.lang?.toLowerCase().startsWith(code));
+    if (v) u.voice = v;
+    return u;
+  }
+  function unlockSpeech() {
+    try {
+      if (speechUnlocked || !('speechSynthesis' in window)) return;
+      speechUnlocked = true;
+      window.speechSynthesis.resume?.();
+      const u = buildUtterance(' ', 0);
+      u.onend = () => window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch(e) {}
+  }
   function speak(text) {
     try {
       if (!text || !('speechSynthesis' in window)) return;
+      speechUnlocked = true;
+      const shouldResumeVad = recOn && micVad && !speakingWord;
+      if (shouldResumeVad) micVad.pause();
+      speakingWord = true;
       window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      const code = LANGS[langIdx]?.[0] || 'en';
-      u.lang = LANG_BCP[code] || 'en-US';
-      u.rate = 0.85; u.pitch = 1.05; u.volume = muted ? 0 : 1;
-      const voices = window.speechSynthesis.getVoices();
-      const v = voices.find(v => v.lang?.toLowerCase().startsWith(code));
-      if (v) u.voice = v;
+      window.speechSynthesis.resume?.();
+      const u = buildUtterance(text);
+      u.onend = u.onerror = () => {
+        speakingWord = false;
+        if (shouldResumeVad && recOn && micVad) micVad.start();
+      };
       window.speechSynthesis.speak(u);
     } catch(e) {}
   }
@@ -767,6 +792,10 @@
       const sc = score(heard, expected, LANGS[langIdx][0]);
       document.getElementById('spoken').textContent = `🎙 ${heard} (${sc}%)`;
       if (sc >= ACCEPT_THRESHOLD) checkWord(expected); // force-validate
+      else if (expected) {
+        showFeedback('ÉCOUTE : ' + expected.toUpperCase(), '#fc6');
+        speak(expected);
+      }
     } catch (e) {
       document.getElementById('spoken').textContent = '⚠️ ' + e.message;
     } finally {
@@ -805,6 +834,7 @@
   }
 
   document.getElementById('mic').addEventListener('click', async () => {
+    unlockSpeech();
     const btn = document.getElementById('mic');
     try {
       const v = await ensureVad();
@@ -818,23 +848,25 @@
     }
   });
   document.getElementById('lang').addEventListener('click', () => {
+    unlockSpeech();
     langIdx = (langIdx+1) % LANGS.length;
     document.getElementById('lang').textContent = LANGS[langIdx][1];
   });
   document.getElementById('mute').addEventListener('click', () => {
+    unlockSpeech();
     muted = !muted;
     document.getElementById('mute').textContent = muted ? '🔇' : '🔊';
   });
 
-  document.getElementById('startBtn').addEventListener('click', () => { ensureAudio(); startGame(); input.focus(); });
-  document.getElementById('replayBtn').addEventListener('click', () => { startGame(); input.focus(); });
+  document.getElementById('startBtn').addEventListener('click', () => { ensureAudio(); unlockSpeech(); startGame(); input.focus(); });
+  document.getElementById('replayBtn').addEventListener('click', () => { unlockSpeech(); startGame(); input.focus(); });
   window.addEventListener('keydown', e => {
     if (e.code === 'Space' && !state.running) {
       e.preventDefault();
       if (!document.getElementById('start').classList.contains('hidden')) {
-        ensureAudio(); startGame(); input.focus();
+        ensureAudio(); unlockSpeech(); startGame(); input.focus();
       } else if (!document.getElementById('end').classList.contains('hidden')) {
-        startGame(); input.focus();
+        unlockSpeech(); startGame(); input.focus();
       }
     }
   });
