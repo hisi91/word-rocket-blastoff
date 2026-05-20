@@ -548,7 +548,9 @@
         body: JSON.stringify({ text, voice: 'hannah' }),
       });
       if (!r.ok) return null;
+      if (r.headers.get('x-tts-fallback') === 'true') return null;
       const blob = await r.blob();
+      if (!blob.type.startsWith('audio/')) return null;
       const url = URL.createObjectURL(blob);
       ttsCache.set(text, url);
       return url;
