@@ -939,7 +939,8 @@
     setTimeout(() => LEVELS.forEach(l => l.level_objects.forEach(o => { if (o.icon_path) loadImg(o.icon_path); })), 300);
 
     statusEl.textContent = `${LEVELS.length} niveaux prêts`;
-    document.getElementById('startBtn').disabled = false;
+    levelsReady = true;
+    updateStartBtn();
   }).catch(err => {
     document.getElementById('loadStatus').textContent = "Erreur de chargement : " + err.message;
   });
