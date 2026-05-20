@@ -508,7 +508,7 @@
     explode(c.x, c.y, ['#ff0','#f80','#f08','#0ff']);
     showFeedback(c.word.toUpperCase() + ' ✓ +' + (100*mult*(state.levelIdx+1)), '#0f8');
     state.current = null;
-    input.style.display = 'none';
+    hideChoices();
     updateHUD();
     setTimeout(nextObject, 500);
   }
