@@ -449,6 +449,7 @@
     const lvl = LEVELS[0];
     showBanner('LEVEL 1', lvl.name);
     setTimeout(() => { state.takeoff.active = false; nextObject(); }, state.takeoff.duration);
+    input.style.display = textInputEnabled ? '' : 'none';
     updateHUD();
   }
 
