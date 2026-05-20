@@ -565,6 +565,7 @@
 
   function endGame(won) {
     state.running = false;
+    input.style.display = 'none';
     document.getElementById('end').classList.remove('hidden');
     const acc = state.attempted ? Math.round(100*state.correct/state.attempted) : 0;
     document.getElementById('endStats').innerHTML =
