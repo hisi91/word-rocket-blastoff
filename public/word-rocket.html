@@ -536,22 +536,59 @@
       window.speechSynthesis.speak(u);
     } catch(e) {}
   }
-  function speak(text) {
+  // --- Groq PlayAI TTS (cached) with speechSynthesis fallback ---
+  const ttsCache = new Map(); // text -> objectURL
+  let ttsAudio = null;
+  async function fetchTTS(text) {
+    if (ttsCache.has(text)) return ttsCache.get(text);
+    try {
+      const r = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, voice: 'Celeste-PlayAI' }),
+      });
+      if (!r.ok) return null;
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      ttsCache.set(text, url);
+      return url;
+    } catch { return null; }
+  }
+  function speakFallback(text) {
     try {
       if (!text || !('speechSynthesis' in window)) return;
-      speechUnlocked = true;
-      const shouldResumeVad = recOn && micVad && !speakingWord;
-      if (shouldResumeVad) micVad.pause();
-      speakingWord = true;
       window.speechSynthesis.cancel();
       window.speechSynthesis.resume?.();
       const u = buildUtterance(text);
       u.onend = u.onerror = () => {
         speakingWord = false;
-        if (shouldResumeVad && recOn && micVad) micVad.start();
+        if (recOn && micVad) micVad.start();
       };
       window.speechSynthesis.speak(u);
-    } catch(e) {}
+    } catch(e) { speakingWord = false; }
+  }
+  async function speak(text) {
+    if (!text) return;
+    speechUnlocked = true;
+    const shouldResumeVad = recOn && micVad && !speakingWord;
+    if (shouldResumeVad) micVad.pause();
+    speakingWord = true;
+    try { window.speechSynthesis?.cancel(); } catch {}
+    if (ttsAudio) { try { ttsAudio.pause(); } catch {} ttsAudio = null; }
+
+    const url = await fetchTTS(text);
+    if (!url) { speakFallback(text); return; }
+    const a = new Audio(url);
+    ttsAudio = a;
+    a.volume = muted ? 0 : 1;
+    const done = () => {
+      speakingWord = false;
+      if (ttsAudio === a) ttsAudio = null;
+      if (shouldResumeVad && recOn && micVad) micVad.start();
+    };
+    a.onended = done;
+    a.onerror = () => { done(); speakFallback(text); };
+    try { await a.play(); } catch { done(); speakFallback(text); }
   }
 
   function loseLife() {
