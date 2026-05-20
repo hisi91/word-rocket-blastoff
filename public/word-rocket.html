@@ -475,9 +475,11 @@
       return;
     }
     state.current = newFalling();
-    document.getElementById('input').value = '';
+    input.value = '';
     document.getElementById('spoken').textContent = '';
     if (speakOnAppear) speak(state.current.word);
+    if (textInputEnabled) { input.style.display = ''; input.focus(); }
+    else { input.style.display = 'none'; }
   }
 
   const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
