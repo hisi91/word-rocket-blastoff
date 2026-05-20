@@ -874,20 +874,32 @@
     return micVad;
   }
 
-  document.getElementById('mic').addEventListener('click', async () => {
-    unlockSpeech();
-    const btn = document.getElementById('mic');
+  async function enableMic(targetOn) {
+    const sideBtn = document.getElementById('mic');
+    const optBtn = document.getElementById('optMic');
+    const wantOn = typeof targetOn === 'boolean' ? targetOn : !recOn;
     try {
+      if (optBtn) { optBtn.disabled = true; if (wantOn && !micReady) optBtn.textContent = 'Activation…'; }
       const v = await ensureVad();
-      recOn = !recOn;
-      btn.classList.toggle('on', recOn);
-      btn.textContent = recOn ? '🎤 ON' : '🎤';
-      if (recOn) v.start(); else v.pause();
+      recOn = wantOn;
+      if (recOn) { v.start(); micReady = true; } else { v.pause(); }
+      sideBtn.classList.toggle('on', recOn);
+      sideBtn.textContent = recOn ? '🎤 ON' : '🎤';
+      if (optBtn) {
+        optBtn.classList.toggle('on', recOn);
+        optBtn.textContent = recOn ? '✓ Activé' : (micReady ? 'Réactiver' : 'Activer');
+        optBtn.disabled = false;
+      }
+      updateStartBtn();
     } catch (e) {
-      btn.textContent = '🎤';
+      sideBtn.textContent = '🎤';
+      if (optBtn) { optBtn.disabled = false; optBtn.textContent = 'Réessayer'; }
       alert('Micro indisponible : ' + e.message);
     }
-  });
+  }
+  document.getElementById('mic').addEventListener('click', () => { unlockSpeech(); enableMic(); });
+  document.getElementById('optMic').addEventListener('click', () => { unlockSpeech(); enableMic(true); });
+  document.getElementById('optSpeak').addEventListener('change', e => { speakOnAppear = e.target.checked; });
   document.getElementById('lang').addEventListener('click', () => {
     unlockSpeech();
     langIdx = (langIdx+1) % LANGS.length;
