@@ -168,7 +168,7 @@
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlod3RoYXpqbmJ0b3ZvaGl6ZWdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDk1NzYsImV4cCI6MjA5NDc4NTU3Nn0.4DKOMT16JnOTIHuHOMqpcCPkLC6thIWQ7718mXaPQNQ";
   const ICON_URL = (path) => `${SUPABASE_URL}/storage/v1/object/public/game-icons/${path}?v=3d`;
   
-  const LEVELS_CACHE_KEY = 'wr_levels_v5';
+  const LEVELS_CACHE_KEY = 'wr_levels_v6';
   const LEVELS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
   const LEVELS_FETCH_TIMEOUT = 3500;
   const DEFAULT_LEVELS = [
@@ -216,7 +216,7 @@
   async function refreshLevelsCache() {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), LEVELS_FETCH_TIMEOUT);
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/levels?select=id,name,total_objects,folder_name,background_theme,fall_duration,level_objects(word,icon_path)&id=lte.10&order=id.asc`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/levels?select=id,name,total_objects,folder_name,background_theme,fall_duration,level_objects(word,icon_path)&id=lte.50&order=id.asc`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
       signal: controller.signal,
     }).finally(() => clearTimeout(timeout));
