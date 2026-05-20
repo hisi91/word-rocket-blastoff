@@ -1021,7 +1021,7 @@
   requestAnimationFrame(loop);
 
   fetchLevels().then(async (levels) => {
-    LEVELS = levels.filter(l => l.level_objects && l.level_objects.some(o => o.icon_path));
+    LEVELS = levels.filter(l => l.level_objects && l.level_objects.length > 0);
     rocketImg = loadImg('shared/rocket.webp');
     const statusEl = document.getElementById('loadStatus');
 
