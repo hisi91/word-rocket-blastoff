@@ -913,6 +913,7 @@
   document.getElementById('mic').addEventListener('click', () => { unlockSpeech(); enableMic(); });
   document.getElementById('optMic').addEventListener('click', () => { unlockSpeech(); enableMic(true); });
   document.getElementById('optSpeak').addEventListener('change', e => { speakOnAppear = e.target.checked; });
+  document.getElementById('optText').addEventListener('change', e => { textInputEnabled = e.target.checked; });
   document.getElementById('lang').addEventListener('click', () => {
     unlockSpeech();
     langIdx = (langIdx+1) % LANGS.length;
