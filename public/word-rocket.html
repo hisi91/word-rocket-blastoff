@@ -483,11 +483,10 @@
       return;
     }
     state.current = newFalling();
-    input.value = '';
     document.getElementById('spoken').textContent = '';
     if (speakOnAppear) speak(state.current.word);
-    if (textInputEnabled) { input.style.display = ''; input.focus(); }
-    else { input.style.display = 'none'; }
+    if (choicesEnabled) showChoices(state.current.word);
+    else hideChoices();
   }
 
   const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
