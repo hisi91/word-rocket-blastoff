@@ -536,7 +536,7 @@
       window.speechSynthesis.speak(u);
     } catch(e) {}
   }
-  // --- Groq PlayAI TTS (cached) with speechSynthesis fallback ---
+  // --- Groq Orpheus TTS (cached) with speechSynthesis fallback ---
   const ttsCache = new Map(); // text -> objectURL
   let ttsAudio = null;
   async function fetchTTS(text) {
@@ -545,10 +545,12 @@
       const r = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice: 'Celeste-PlayAI' }),
+        body: JSON.stringify({ text, voice: 'hannah' }),
       });
       if (!r.ok) return null;
+      if (r.headers.get('x-tts-fallback') === 'true') return null;
       const blob = await r.blob();
+      if (!blob.type.startsWith('audio/')) return null;
       const url = URL.createObjectURL(blob);
       ttsCache.set(text, url);
       return url;

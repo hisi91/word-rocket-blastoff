@@ -2,14 +2,18 @@ import "@tanstack/react-start";
 import { createFileRoute } from "@tanstack/react-router";
 
 const GROQ_TTS_URL = "https://api.groq.com/openai/v1/audio/speech";
+const jsonHeaders = { "content-type": "application/json" };
 
-// PlayAI voices (English). See https://console.groq.com/docs/text-to-speech
+function ttsUnavailable(message: string) {
+  return new Response(JSON.stringify({ audio: false, fallback: true, error: message }), {
+    status: 200,
+    headers: { ...jsonHeaders, "x-tts-fallback": "true" },
+  });
+}
+
+// Orpheus voices (English). See https://console.groq.com/docs/text-to-speech/orpheus
 const ALLOWED_VOICES = new Set([
-  "Arista-PlayAI", "Atlas-PlayAI", "Basil-PlayAI", "Briggs-PlayAI",
-  "Calum-PlayAI", "Celeste-PlayAI", "Cheyenne-PlayAI", "Chip-PlayAI",
-  "Cillian-PlayAI", "Deedee-PlayAI", "Fritz-PlayAI", "Gail-PlayAI",
-  "Indigo-PlayAI", "Mamaw-PlayAI", "Mason-PlayAI", "Mikail-PlayAI",
-  "Mitch-PlayAI", "Quinn-PlayAI", "Thunder-PlayAI",
+  "autumn", "diana", "hannah", "austin", "daniel", "troy",
 ]);
 
 export const Route = createFileRoute("/api/tts")({
@@ -18,21 +22,19 @@ export const Route = createFileRoute("/api/tts")({
       POST: async ({ request }: { request: Request }) => {
         const key = process.env.GROQ_API_KEY;
         if (!key) {
-          return new Response(JSON.stringify({ error: "GROQ_API_KEY missing" }), {
-            status: 500, headers: { "content-type": "application/json" },
-          });
+          return ttsUnavailable("GROQ_API_KEY missing");
         }
         let body: { text?: string; voice?: string };
         try { body = await request.json(); } catch {
           return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-            status: 400, headers: { "content-type": "application/json" },
+            status: 400, headers: jsonHeaders,
           });
         }
         const text = (body.text || "").toString().trim();
-        const voice = ALLOWED_VOICES.has(body.voice || "") ? body.voice! : "Celeste-PlayAI";
+        const voice = ALLOWED_VOICES.has(body.voice || "") ? body.voice! : "hannah";
         if (!text || text.length > 300) {
           return new Response(JSON.stringify({ error: "Invalid text" }), {
-            status: 400, headers: { "content-type": "application/json" },
+            status: 400, headers: jsonHeaders,
           });
         }
         try {
@@ -43,7 +45,7 @@ export const Route = createFileRoute("/api/tts")({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "playai-tts",
+              model: "canopylabs/orpheus-v1-english",
               voice,
               input: text,
               response_format: "wav",
@@ -51,10 +53,7 @@ export const Route = createFileRoute("/api/tts")({
           });
           if (!res.ok) {
             const errText = await res.text();
-            return new Response(
-              JSON.stringify({ error: `Groq ${res.status}: ${errText.slice(0, 200)}` }),
-              { status: 502, headers: { "content-type": "application/json" } },
-            );
+            return ttsUnavailable(`Groq ${res.status}: ${errText.slice(0, 200)}`);
           }
           const buf = await res.arrayBuffer();
           return new Response(buf, {
@@ -65,10 +64,7 @@ export const Route = createFileRoute("/api/tts")({
             },
           });
         } catch (err) {
-          return new Response(
-            JSON.stringify({ error: err instanceof Error ? err.message : "fetch failed" }),
-            { status: 502, headers: { "content-type": "application/json" } },
-          );
+          return ttsUnavailable(err instanceof Error ? err.message : "fetch failed");
         }
       },
     },
