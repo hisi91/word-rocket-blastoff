@@ -741,20 +741,46 @@
     requestAnimationFrame(loop);
   }
 
-  // ===== Input =====
-  const input = document.getElementById('input');
-  input.addEventListener('input', e => {
-    if (!state.running || !state.current) return;
-    if (norm(e.target.value) === norm(state.current.word)) hitTarget();
-  });
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') checkWord(input.value); });
+  // ===== Choices (QCM) =====
+  const choicesEl = document.getElementById('choices');
+  function hideChoices() { choicesEl.style.display = 'none'; choicesEl.innerHTML = ''; }
+  function allWords() {
+    const set = new Set();
+    LEVELS.forEach(l => l.level_objects.forEach(o => { if (o.word) set.add(o.word); }));
+    return [...set];
+  }
+  function showChoices(correct) {
+    const pool = allWords().filter(w => norm(w) !== norm(correct));
+    // shuffle pool
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [pool[i],pool[j]] = [pool[j],pool[i]]; }
+    const distractors = pool.slice(0, 2);
+    const opts = [correct, ...distractors];
+    for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [opts[i],opts[j]] = [opts[j],opts[i]]; }
+    choicesEl.innerHTML = '';
+    choicesEl.style.display = 'flex';
+    opts.forEach(w => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = w;
+      b.addEventListener('click', () => {
+        if (!state.running || !state.current) return;
+        const isGood = norm(w) === norm(state.current.word);
+        [...choicesEl.children].forEach(c => c.disabled = true);
+        b.classList.add(isGood ? 'good' : 'bad');
+        if (isGood) checkWord(w);
+        else { speak(state.current.word); loseLife(); }
+      });
+      choicesEl.appendChild(b);
+    });
+  }
+  hideChoices();
 
   // ===== Speech (Whisper via /api/transcribe + Silero VAD + fuzzy IPA) =====
   const LANGS = [['en','🇬🇧','en'],['fr','🇫🇷','fr'],['es','🇪🇸','es']];
   let langIdx = 0;
   let micVad = null, recOn = false, busy = false;
   let speakOnAppear = false;
-  let textInputEnabled = false;
+  let choicesEnabled = false;
   let micReady = false, levelsReady = false;
   function updateStartBtn() {
     const btn = document.getElementById('startBtn');
