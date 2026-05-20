@@ -3,13 +3,9 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const GROQ_TTS_URL = "https://api.groq.com/openai/v1/audio/speech";
 
-// PlayAI voices (English). See https://console.groq.com/docs/text-to-speech
+// Orpheus voices (English). See https://console.groq.com/docs/text-to-speech/orpheus
 const ALLOWED_VOICES = new Set([
-  "Arista-PlayAI", "Atlas-PlayAI", "Basil-PlayAI", "Briggs-PlayAI",
-  "Calum-PlayAI", "Celeste-PlayAI", "Cheyenne-PlayAI", "Chip-PlayAI",
-  "Cillian-PlayAI", "Deedee-PlayAI", "Fritz-PlayAI", "Gail-PlayAI",
-  "Indigo-PlayAI", "Mamaw-PlayAI", "Mason-PlayAI", "Mikail-PlayAI",
-  "Mitch-PlayAI", "Quinn-PlayAI", "Thunder-PlayAI",
+  "autumn", "diana", "hannah", "austin", "daniel", "troy",
 ]);
 
 export const Route = createFileRoute("/api/tts")({
@@ -29,7 +25,7 @@ export const Route = createFileRoute("/api/tts")({
           });
         }
         const text = (body.text || "").toString().trim();
-        const voice = ALLOWED_VOICES.has(body.voice || "") ? body.voice! : "Celeste-PlayAI";
+        const voice = ALLOWED_VOICES.has(body.voice || "") ? body.voice! : "hannah";
         if (!text || text.length > 300) {
           return new Response(JSON.stringify({ error: "Invalid text" }), {
             status: 400, headers: { "content-type": "application/json" },
@@ -43,7 +39,7 @@ export const Route = createFileRoute("/api/tts")({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "playai-tts",
+              model: "canopylabs/orpheus-v1-english",
               voice,
               input: text,
               response_format: "wav",
