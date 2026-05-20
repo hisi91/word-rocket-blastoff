@@ -740,7 +740,8 @@
   const LANGS = [['en','🇬🇧','en'],['fr','🇫🇷','fr'],['es','🇪🇸','es']];
   let langIdx = 0;
   let micVad = null, recOn = false, busy = false;
-  let speakOnAppear = true;
+  let speakOnAppear = false;
+  let textInputEnabled = false;
   let micReady = false, levelsReady = false;
   function updateStartBtn() {
     const btn = document.getElementById('startBtn');
