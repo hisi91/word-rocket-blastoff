@@ -64,6 +64,24 @@
     color: #0ff; text-shadow: 0 0 30px #0ff, 0 0 60px #f0f; letter-spacing: 8px; text-align:center; }
   .lb-sub { font-size: 16px; color: #fff; margin-top: 12px; opacity: .8; }
   .loading { color:#0ff; font-size:18px; }
+  .start-options { display:flex; flex-direction:column; gap:12px; align-items:stretch;
+    background: rgba(0,255,255,.04); border:1px solid #0ff4; border-radius:12px;
+    padding: 16px 20px; min-width: min(360px, 86vw); }
+  .opt-row { display:flex; align-items:center; justify-content:space-between; gap:14px;
+    color:#cfefff; font-size:15px; text-align:left; }
+  .opt-row .lbl { flex:1; line-height:1.3; }
+  .opt-row .hint { display:block; font-size:11px; color:#9ad; margin-top:2px; }
+  .toggle { appearance:none; -webkit-appearance:none; width:46px; height:26px; border-radius:14px;
+    background:#234; border:1px solid #0ff6; position:relative; cursor:pointer; transition:.2s; flex:0 0 auto; }
+  .toggle::after { content:''; position:absolute; top:2px; left:2px; width:20px; height:20px;
+    border-radius:50%; background:#0ff; transition:.2s; box-shadow:0 0 8px #0ff8; }
+  .toggle:checked { background:#063; border-color:#0f8; }
+  .toggle:checked::after { left:22px; background:#0f8; box-shadow:0 0 10px #0f8; }
+  .mic-btn { padding:10px 18px; border-radius:10px; border:1px solid #0ff6; background:#012;
+    color:#0ff; font-family:inherit; font-size:14px; letter-spacing:1px; cursor:pointer; flex:0 0 auto; }
+  .mic-btn.on { background:#063; border-color:#0f8; color:#0f8; box-shadow:0 0 14px #0f86; }
+  .mic-btn:disabled { opacity:.6; cursor:wait; }
+  .req { color:#fc6; font-size:11px; margin-left:6px; }
 </style>
 </head>
 <body>
@@ -103,6 +121,20 @@
       <br>Les noms ne sont PAS affichés : à toi de reconnaître l'icône !
       <br>5 niveaux, du sol jusqu'au cosmos.</div>
     <div id="loadStatus" class="loading">Chargement des niveaux...</div>
+    <div class="start-options">
+      <label class="opt-row">
+        <span class="lbl">🔊 Prononcer le nom à l'apparition
+          <span class="hint">L'objet est lu à voix haute quand il apparaît</span>
+        </span>
+        <input type="checkbox" id="optSpeak" class="toggle" checked />
+      </label>
+      <div class="opt-row">
+        <span class="lbl">🎤 Activer le microphone<span class="req">requis</span>
+          <span class="hint">Nécessaire pour reconnaître ta voix</span>
+        </span>
+        <button type="button" id="optMic" class="mic-btn">Activer</button>
+      </div>
+    </div>
     <button class="big" id="startBtn" disabled>START</button>
     <div class="subtitle">Cliquez ou appuyez sur ESPACE</div>
   </div>
@@ -438,7 +470,7 @@
     state.current = newFalling();
     document.getElementById('input').value = '';
     document.getElementById('spoken').textContent = '';
-    speak(state.current.word);
+    if (speakOnAppear) speak(state.current.word);
   }
 
   const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
@@ -702,6 +734,15 @@
   const LANGS = [['en','🇬🇧','en'],['fr','🇫🇷','fr'],['es','🇪🇸','es']];
   let langIdx = 0;
   let micVad = null, recOn = false, busy = false;
+  let speakOnAppear = true;
+  let micReady = false, levelsReady = false;
+  function updateStartBtn() {
+    const btn = document.getElementById('startBtn');
+    btn.disabled = !(levelsReady && micReady);
+    const status = document.getElementById('loadStatus');
+    if (levelsReady && !micReady) status.textContent = "Active le micro pour démarrer";
+    else if (levelsReady && micReady) status.textContent = "Prêt à jouer !";
+  }
 
   // --- Fuzzy + phonetic scoring ---
   function levenshtein(a, b) {
@@ -833,20 +874,32 @@
     return micVad;
   }
 
-  document.getElementById('mic').addEventListener('click', async () => {
-    unlockSpeech();
-    const btn = document.getElementById('mic');
+  async function enableMic(targetOn) {
+    const sideBtn = document.getElementById('mic');
+    const optBtn = document.getElementById('optMic');
+    const wantOn = typeof targetOn === 'boolean' ? targetOn : !recOn;
     try {
+      if (optBtn) { optBtn.disabled = true; if (wantOn && !micReady) optBtn.textContent = 'Activation…'; }
       const v = await ensureVad();
-      recOn = !recOn;
-      btn.classList.toggle('on', recOn);
-      btn.textContent = recOn ? '🎤 ON' : '🎤';
-      if (recOn) v.start(); else v.pause();
+      recOn = wantOn;
+      if (recOn) { v.start(); micReady = true; } else { v.pause(); }
+      sideBtn.classList.toggle('on', recOn);
+      sideBtn.textContent = recOn ? '🎤 ON' : '🎤';
+      if (optBtn) {
+        optBtn.classList.toggle('on', recOn);
+        optBtn.textContent = recOn ? '✓ Activé' : (micReady ? 'Réactiver' : 'Activer');
+        optBtn.disabled = false;
+      }
+      updateStartBtn();
     } catch (e) {
-      btn.textContent = '🎤';
+      sideBtn.textContent = '🎤';
+      if (optBtn) { optBtn.disabled = false; optBtn.textContent = 'Réessayer'; }
       alert('Micro indisponible : ' + e.message);
     }
-  });
+  }
+  document.getElementById('mic').addEventListener('click', () => { unlockSpeech(); enableMic(); });
+  document.getElementById('optMic').addEventListener('click', () => { unlockSpeech(); enableMic(true); });
+  document.getElementById('optSpeak').addEventListener('change', e => { speakOnAppear = e.target.checked; });
   document.getElementById('lang').addEventListener('click', () => {
     unlockSpeech();
     langIdx = (langIdx+1) % LANGS.length;
@@ -886,7 +939,8 @@
     setTimeout(() => LEVELS.forEach(l => l.level_objects.forEach(o => { if (o.icon_path) loadImg(o.icon_path); })), 300);
 
     statusEl.textContent = `${LEVELS.length} niveaux prêts`;
-    document.getElementById('startBtn').disabled = false;
+    levelsReady = true;
+    updateStartBtn();
   }).catch(err => {
     document.getElementById('loadStatus').textContent = "Erreur de chargement : " + err.message;
   });
