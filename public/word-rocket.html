@@ -22,10 +22,18 @@
     display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 10; }
   .side-controls { position: absolute; left: 8px; bottom: 14px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
   .side-controls button { padding: 6px 8px; font-size: 12px; min-width: 40px; text-align: center; }
-  #input { width: min(280px, calc(100vw - 110px)); padding: 12px 16px; border: 2px solid #0ff;
-    background: rgba(0,0,0,.7); color: #fff; font-family: inherit; font-size: 18px;
-    border-radius: 8px; outline: none; text-align: center; letter-spacing: 2px; margin-bottom: 0; }
-  #input:focus { box-shadow: 0 0 12px #0ff; }
+  #choices { display: flex; gap: 8px; justify-content: center; flex-wrap: nowrap;
+    width: min(560px, calc(100vw - 100px)); }
+  #choices button { flex: 1 1 0; min-width: 0; padding: 14px 6px; border: 2px solid #0ff;
+    background: rgba(0,20,30,.78); color: #fff; font-family: inherit; font-size: 16px;
+    font-weight: bold; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase;
+    cursor: pointer; transition: transform .08s, background .15s, border-color .15s;
+    box-shadow: 0 0 10px #0ff3; overflow: hidden; text-overflow: ellipsis; }
+  #choices button:hover { background: rgba(0,60,80,.85); transform: translateY(-2px); }
+  #choices button:active { transform: translateY(1px); }
+  #choices button.good { background: #063; border-color: #0f8; color: #0f8; box-shadow: 0 0 18px #0f8; }
+  #choices button.bad { background: #501018; border-color: #f33; color: #f88; }
+  #choices button:disabled { cursor: default; opacity: .85; }
   button { font-family: inherit; cursor: pointer; padding: 8px 14px; border-radius: 8px;
     border: 2px solid #0ff; background: rgba(0,30,40,.7); color: #0ff; font-size: 14px; }
   button.on { background: #0ff; color: #021; }
@@ -99,7 +107,7 @@
 
   <div class="bottom">
     <div id="spoken"></div>
-    <input id="input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="devine l'objet..." />
+    <div id="choices"></div>
   </div>
   <div class="side-controls">
     <button id="mic">🎤</button>
@@ -129,8 +137,8 @@
         <input type="checkbox" id="optSpeak" class="toggle" />
       </label>
       <label class="opt-row">
-        <span class="lbl">⌨️ Champ de texte
-          <span class="hint">Tape le nom de l'objet au clavier</span>
+        <span class="lbl">🔤 Choix multiples (QCM)
+          <span class="hint">Affiche 3 propositions à choisir</span>
         </span>
         <input type="checkbox" id="optText" class="toggle" />
       </label>
@@ -449,7 +457,7 @@
     const lvl = LEVELS[0];
     showBanner('LEVEL 1', lvl.name);
     setTimeout(() => { state.takeoff.active = false; nextObject(); }, state.takeoff.duration);
-    input.style.display = textInputEnabled ? '' : 'none';
+    hideChoices();
     updateHUD();
   }
 
@@ -475,11 +483,10 @@
       return;
     }
     state.current = newFalling();
-    input.value = '';
     document.getElementById('spoken').textContent = '';
     if (speakOnAppear) speak(state.current.word);
-    if (textInputEnabled) { input.style.display = ''; input.focus(); }
-    else { input.style.display = 'none'; }
+    if (choicesEnabled) showChoices(state.current.word);
+    else hideChoices();
   }
 
   const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
@@ -501,7 +508,7 @@
     explode(c.x, c.y, ['#ff0','#f80','#f08','#0ff']);
     showFeedback(c.word.toUpperCase() + ' ✓ +' + (100*mult*(state.levelIdx+1)), '#0f8');
     state.current = null;
-    input.style.display = 'none';
+    hideChoices();
     updateHUD();
     setTimeout(nextObject, 500);
   }
@@ -557,7 +564,7 @@
     showFeedback('-1 ❤  ' + (missedWord?.toUpperCase() || ''), '#f33');
     if (missedWord) speak(missedWord);
     state.current = null;
-    input.style.display = 'none';
+    hideChoices();
     updateHUD();
     if (state.lives <= 0) { setTimeout(()=>endGame(false), 900); return; }
     setTimeout(nextObject, 1400);
@@ -565,7 +572,7 @@
 
   function endGame(won) {
     state.running = false;
-    input.style.display = 'none';
+    hideChoices();
     document.getElementById('end').classList.remove('hidden');
     const acc = state.attempted ? Math.round(100*state.correct/state.attempted) : 0;
     document.getElementById('endStats').innerHTML =
@@ -734,20 +741,46 @@
     requestAnimationFrame(loop);
   }
 
-  // ===== Input =====
-  const input = document.getElementById('input');
-  input.addEventListener('input', e => {
-    if (!state.running || !state.current) return;
-    if (norm(e.target.value) === norm(state.current.word)) hitTarget();
-  });
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') checkWord(input.value); });
+  // ===== Choices (QCM) =====
+  const choicesEl = document.getElementById('choices');
+  function hideChoices() { choicesEl.style.display = 'none'; choicesEl.innerHTML = ''; }
+  function allWords() {
+    const set = new Set();
+    LEVELS.forEach(l => l.level_objects.forEach(o => { if (o.word) set.add(o.word); }));
+    return [...set];
+  }
+  function showChoices(correct) {
+    const pool = allWords().filter(w => norm(w) !== norm(correct));
+    // shuffle pool
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [pool[i],pool[j]] = [pool[j],pool[i]]; }
+    const distractors = pool.slice(0, 2);
+    const opts = [correct, ...distractors];
+    for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [opts[i],opts[j]] = [opts[j],opts[i]]; }
+    choicesEl.innerHTML = '';
+    choicesEl.style.display = 'flex';
+    opts.forEach(w => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = w;
+      b.addEventListener('click', () => {
+        if (!state.running || !state.current) return;
+        const isGood = norm(w) === norm(state.current.word);
+        [...choicesEl.children].forEach(c => c.disabled = true);
+        b.classList.add(isGood ? 'good' : 'bad');
+        if (isGood) checkWord(w);
+        else { speak(state.current.word); loseLife(); }
+      });
+      choicesEl.appendChild(b);
+    });
+  }
+  hideChoices();
 
   // ===== Speech (Whisper via /api/transcribe + Silero VAD + fuzzy IPA) =====
   const LANGS = [['en','🇬🇧','en'],['fr','🇫🇷','fr'],['es','🇪🇸','es']];
   let langIdx = 0;
   let micVad = null, recOn = false, busy = false;
   let speakOnAppear = false;
-  let textInputEnabled = false;
+  let choicesEnabled = false;
   let micReady = false, levelsReady = false;
   function updateStartBtn() {
     const btn = document.getElementById('startBtn');
@@ -913,7 +946,7 @@
   document.getElementById('mic').addEventListener('click', () => { unlockSpeech(); enableMic(); });
   document.getElementById('optMic').addEventListener('click', () => { unlockSpeech(); enableMic(true); });
   document.getElementById('optSpeak').addEventListener('change', e => { speakOnAppear = e.target.checked; });
-  document.getElementById('optText').addEventListener('change', e => { textInputEnabled = e.target.checked; });
+  document.getElementById('optText').addEventListener('change', e => { choicesEnabled = e.target.checked; });
   document.getElementById('lang').addEventListener('click', () => {
     unlockSpeech();
     langIdx = (langIdx+1) % LANGS.length;
@@ -925,15 +958,15 @@
     document.getElementById('mute').textContent = muted ? '🔇' : '🔊';
   });
 
-  document.getElementById('startBtn').addEventListener('click', () => { ensureAudio(); unlockSpeech(); startGame(); input.focus(); });
-  document.getElementById('replayBtn').addEventListener('click', () => { unlockSpeech(); startGame(); input.focus(); });
+  document.getElementById('startBtn').addEventListener('click', () => { ensureAudio(); unlockSpeech(); startGame(); });
+  document.getElementById('replayBtn').addEventListener('click', () => { unlockSpeech(); startGame(); });
   window.addEventListener('keydown', e => {
     if (e.code === 'Space' && !state.running) {
       e.preventDefault();
       if (!document.getElementById('start').classList.contains('hidden')) {
-        ensureAudio(); unlockSpeech(); startGame(); input.focus();
+        ensureAudio(); unlockSpeech(); startGame();
       } else if (!document.getElementById('end').classList.contains('hidden')) {
-        unlockSpeech(); startGame(); input.focus();
+        unlockSpeech(); startGame();
       }
     }
   });
