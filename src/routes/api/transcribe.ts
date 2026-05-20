@@ -2,45 +2,37 @@ import "@tanstack/react-start";
 import { createFileRoute } from "@tanstack/react-router";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
+const jsonHeaders = { "content-type": "application/json" };
+
+// Always return 200 with { text: "" } so the client never sees a 500.
+// Signal upstream failures via x-stt-fallback header for client logging.
+function emptyResult(reason: string, fallback = true) {
+  return new Response(JSON.stringify({ text: "", error: reason, fallback }), {
+    status: 200,
+    headers: { ...jsonHeaders, ...(fallback ? { "x-stt-fallback": "true" } : {}) },
+  });
+}
 
 export const Route = createFileRoute("/api/transcribe")({
   server: {
     handlers: {
       POST: async ({ request }: { request: Request }) => {
         const key = process.env.GROQ_API_KEY;
-        if (!key) {
-          return new Response(JSON.stringify({ error: "GROQ_API_KEY missing" }), {
-            status: 500,
-            headers: { "content-type": "application/json" },
-          });
-        }
+        if (!key) return emptyResult("GROQ_API_KEY missing");
 
         let incoming: FormData;
         try {
           incoming = await request.formData();
         } catch {
-          return new Response(JSON.stringify({ error: "Invalid form data" }), {
-            status: 400,
-            headers: { "content-type": "application/json" },
-          });
+          return emptyResult("Invalid form data", false);
         }
 
         const audio = incoming.get("audio");
         const language = (incoming.get("language") as string) || "en";
         const prompt = (incoming.get("prompt") as string) || "";
 
-        if (!(audio instanceof Blob)) {
-          return new Response(JSON.stringify({ error: "Missing audio" }), {
-            status: 400,
-            headers: { "content-type": "application/json" },
-          });
-        }
-        if (audio.size > 5 * 1024 * 1024) {
-          return new Response(JSON.stringify({ error: "Audio too large" }), {
-            status: 413,
-            headers: { "content-type": "application/json" },
-          });
-        }
+        if (!(audio instanceof Blob)) return emptyResult("Missing audio", false);
+        if (audio.size > 5 * 1024 * 1024) return emptyResult("Audio too large", false);
 
         const fd = new FormData();
         fd.append("file", audio, "speech.webm");
@@ -57,21 +49,10 @@ export const Route = createFileRoute("/api/transcribe")({
             body: fd,
           });
           const text = await res.text();
-          if (!res.ok) {
-            return new Response(
-              JSON.stringify({ error: `Groq ${res.status}: ${text.slice(0, 200)}` }),
-              { status: 502, headers: { "content-type": "application/json" } },
-            );
-          }
-          return new Response(text, {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          });
+          if (!res.ok) return emptyResult(`Groq ${res.status}: ${text.slice(0, 200)}`);
+          return new Response(text, { status: 200, headers: jsonHeaders });
         } catch (err) {
-          return new Response(
-            JSON.stringify({ error: err instanceof Error ? err.message : "fetch failed" }),
-            { status: 502, headers: { "content-type": "application/json" } },
-          );
+          return emptyResult(err instanceof Error ? err.message : "fetch failed");
         }
       },
     },
