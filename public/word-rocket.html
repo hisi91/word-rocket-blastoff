@@ -126,7 +126,13 @@
         <span class="lbl">🔊 Prononcer le nom à l'apparition
           <span class="hint">L'objet est lu à voix haute quand il apparaît</span>
         </span>
-        <input type="checkbox" id="optSpeak" class="toggle" checked />
+        <input type="checkbox" id="optSpeak" class="toggle" />
+      </label>
+      <label class="opt-row">
+        <span class="lbl">⌨️ Champ de texte
+          <span class="hint">Tape le nom de l'objet au clavier</span>
+        </span>
+        <input type="checkbox" id="optText" class="toggle" />
       </label>
       <div class="opt-row">
         <span class="lbl">🎤 Activer le microphone<span class="req">requis</span>
@@ -443,6 +449,7 @@
     const lvl = LEVELS[0];
     showBanner('LEVEL 1', lvl.name);
     setTimeout(() => { state.takeoff.active = false; nextObject(); }, state.takeoff.duration);
+    input.style.display = textInputEnabled ? '' : 'none';
     updateHUD();
   }
 
@@ -468,9 +475,11 @@
       return;
     }
     state.current = newFalling();
-    document.getElementById('input').value = '';
+    input.value = '';
     document.getElementById('spoken').textContent = '';
     if (speakOnAppear) speak(state.current.word);
+    if (textInputEnabled) { input.style.display = ''; input.focus(); }
+    else { input.style.display = 'none'; }
   }
 
   const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
@@ -492,6 +501,7 @@
     explode(c.x, c.y, ['#ff0','#f80','#f08','#0ff']);
     showFeedback(c.word.toUpperCase() + ' ✓ +' + (100*mult*(state.levelIdx+1)), '#0f8');
     state.current = null;
+    input.style.display = 'none';
     updateHUD();
     setTimeout(nextObject, 500);
   }
@@ -547,6 +557,7 @@
     showFeedback('-1 ❤  ' + (missedWord?.toUpperCase() || ''), '#f33');
     if (missedWord) speak(missedWord);
     state.current = null;
+    input.style.display = 'none';
     updateHUD();
     if (state.lives <= 0) { setTimeout(()=>endGame(false), 900); return; }
     setTimeout(nextObject, 1400);
@@ -554,6 +565,7 @@
 
   function endGame(won) {
     state.running = false;
+    input.style.display = 'none';
     document.getElementById('end').classList.remove('hidden');
     const acc = state.attempted ? Math.round(100*state.correct/state.attempted) : 0;
     document.getElementById('endStats').innerHTML =
@@ -734,7 +746,8 @@
   const LANGS = [['en','🇬🇧','en'],['fr','🇫🇷','fr'],['es','🇪🇸','es']];
   let langIdx = 0;
   let micVad = null, recOn = false, busy = false;
-  let speakOnAppear = true;
+  let speakOnAppear = false;
+  let textInputEnabled = false;
   let micReady = false, levelsReady = false;
   function updateStartBtn() {
     const btn = document.getElementById('startBtn');
@@ -900,6 +913,7 @@
   document.getElementById('mic').addEventListener('click', () => { unlockSpeech(); enableMic(); });
   document.getElementById('optMic').addEventListener('click', () => { unlockSpeech(); enableMic(true); });
   document.getElementById('optSpeak').addEventListener('change', e => { speakOnAppear = e.target.checked; });
+  document.getElementById('optText').addEventListener('change', e => { textInputEnabled = e.target.checked; });
   document.getElementById('lang').addEventListener('click', () => {
     unlockSpeech();
     langIdx = (langIdx+1) % LANGS.length;
