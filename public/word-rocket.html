@@ -507,6 +507,8 @@
     loadLevel();
     document.getElementById('start').classList.add('hidden');
     document.getElementById('end').classList.add('hidden');
+    document.getElementById('topControls').style.display = 'flex';
+    setPaused(false);
     state.running = true;
     // Takeoff sequence: ground visible, rocket sits on it, then lifts off.
     scrollY = 0;
