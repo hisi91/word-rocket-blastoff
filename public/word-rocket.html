@@ -93,6 +93,15 @@
   .mic-btn.on { background:#063; border-color:#0f8; color:#0f8; box-shadow:0 0 14px #0f86; }
   .mic-btn:disabled { opacity:.6; cursor:wait; }
   .req { color:#fc6; font-size:11px; margin-left:6px; }
+  .start-prompt { position:absolute; left:50%; top:38%; transform:translate(-50%,-50%);
+    padding:14px 22px; border-radius:14px; background:rgba(0,20,30,.7);
+    border:1px solid #0ff8; color:#0ff; font-size:clamp(16px,3.5vw,22px);
+    letter-spacing:1px; text-shadow:0 0 12px #0ff8; box-shadow:0 0 24px #0ff4;
+    z-index:24; pointer-events:none; opacity:0; transition:opacity .3s;
+    text-align:center; white-space:nowrap; }
+  .start-prompt.show { opacity:1; animation: pulseStart 1.6s ease-in-out infinite; }
+  @keyframes pulseStart { 0%,100% { transform:translate(-50%,-50%) scale(1); }
+    50% { transform:translate(-50%,-50%) scale(1.08); } }
 </style>
 </head>
 <body>
