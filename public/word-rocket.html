@@ -22,6 +22,9 @@
     display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 10; }
   .side-controls { position: absolute; left: 8px; top: 56px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
   .side-controls button { padding: 6px 8px; font-size: 12px; min-width: 40px; text-align: center; }
+  .top-controls { position: absolute; left: 8px; top: 48px; display: flex; gap: 6px; z-index: 20; }
+  .top-controls button { padding: 6px 10px; font-size: 14px; min-width: 40px; text-align: center; background: rgba(0,0,0,.55); border: 2px solid #0ff8; color: #0ff; border-radius: 6px; backdrop-filter: blur(4px); }
+  .top-controls button:hover { background: rgba(0,40,60,.8); }
   #choices { display: flex; gap: 8px; justify-content: center; flex-wrap: nowrap;
     width: min(560px, calc(100vw - 28px)); margin: 0 auto; }
   #choices button { flex: 1 1 0; min-width: 0; padding: 14px 6px; border: 2px solid #0ff;
@@ -109,6 +112,10 @@
     <div id="spoken"></div>
     <div id="choices"></div>
   </div>
+  <div class="top-controls" id="topControls" style="display:none">
+    <button id="pauseBtn" title="Pause">⏸</button>
+    <button id="restartBtn" title="Restart">↻</button>
+  </div>
   <div class="side-controls">
     <button id="mic">🎤</button>
     <button id="lang">🇬🇧</button>
@@ -154,7 +161,7 @@
   </div>
 
   <div class="overlay hidden" id="end">
-    <div class="title" style="font-size: clamp(32px,7vw,60px)">GAME OVER</div>
+    <div class="title" id="endTitle" style="font-size: clamp(32px,7vw,60px)">GAME OVER</div>
     <div id="endStats" style="font-size:18px;line-height:1.8"></div>
     <div id="missed" class="endlist"></div>
     <button class="big" id="replayBtn">REJOUER</button>
@@ -471,7 +478,7 @@
   let LEVELS = [];
   let rocketImg = null;
   const state = {
-    running: false, levelIdx: 0, score: 0, lives: 3, combo: 0,
+    running: false, paused: false, levelIdx: 0, score: 0, lives: 3, combo: 0,
     queue: [], current: null, missed: [], correct: 0, attempted: 0,
     rocket: { x: 0, y: 0, shake: 0, exploding: 0 },
     takeoff: { active: false, t0: 0, duration: 2600 },
@@ -500,6 +507,8 @@
     loadLevel();
     document.getElementById('start').classList.add('hidden');
     document.getElementById('end').classList.add('hidden');
+    document.getElementById('topControls').style.display = 'flex';
+    setPaused(false);
     state.running = true;
     // Takeoff sequence: ground visible, rocket sits on it, then lifts off.
     scrollY = 0;
@@ -661,10 +670,20 @@
 
   function endGame(won) {
     state.running = false;
+    setPaused(false);
+    document.getElementById('topControls').style.display = 'none';
     hideChoices();
     document.getElementById('end').classList.remove('hidden');
     const acc = state.attempted ? Math.round(100*state.correct/state.attempted) : 0;
     const finishedAll = won && state.levelIdx >= LEVELS.length - 1;
+    const endTitle = document.getElementById('endTitle');
+    if (finishedAll) {
+      endTitle.textContent = 'CONGRATULATIONS';
+      endTitle.style.color = '#ffd54a';
+    } else {
+      endTitle.textContent = 'GAME OVER';
+      endTitle.style.color = '';
+    }
     const congrats = finishedAll
       ? `<div style="margin-bottom:12px;font-size:1.4em">🎉🏆🎉</div>
          <div style="font-size:1.2em;font-weight:bold;margin-bottom:8px">FÉLICITATIONS !</div>
@@ -798,7 +817,7 @@
   }
 
   function drawFalling(obj, now) {
-    obj.y += obj.vy;
+    if (!state.paused) obj.y += obj.vy;
     drawImageContained(pctx, obj.img, obj.x, obj.y, ICON_SIZE);
     // progress bar (no word shown!)
     const ratio = Math.max(0, Math.min(1, 1 - (obj.y + ICON_SIZE/2) / (obj.maxY + ICON_SIZE/2)));
@@ -806,8 +825,14 @@
     pctx.fillStyle = '#0008'; pctx.fillRect(obj.x - bw/2, obj.y + ICON_SIZE/2 + 6, bw, 6);
     pctx.fillStyle = ratio < 0.3 ? '#f33' : ratio < 0.6 ? '#fa0' : '#0f8';
     pctx.fillRect(obj.x - bw/2, obj.y + ICON_SIZE/2 + 6, bw * ratio, 6);
-    if (ratio < 0.3 && now - obj.lastTick > 250) { SFX.tick(); obj.lastTick = now; }
-    if (obj.y >= obj.maxY) loseLife();
+    if (!state.paused && ratio < 0.3 && now - obj.lastTick > 250) { SFX.tick(); obj.lastTick = now; }
+    if (!state.paused && obj.y >= obj.maxY) loseLife();
+  }
+
+  function setPaused(p) {
+    state.paused = !!p;
+    const btn = document.getElementById('pauseBtn');
+    if (btn) btn.textContent = state.paused ? '▶' : '⏸';
   }
 
   function drawParticles() {
@@ -1061,6 +1086,8 @@
 
   document.getElementById('startBtn').addEventListener('click', () => { ensureAudio(); unlockSpeech(); startGame(); });
   document.getElementById('replayBtn').addEventListener('click', () => { unlockSpeech(); startGame(); });
+  document.getElementById('pauseBtn').addEventListener('click', () => { if (state.running) setPaused(!state.paused); });
+  document.getElementById('restartBtn').addEventListener('click', () => { unlockSpeech(); startGame(); });
   window.addEventListener('keydown', e => {
     if (e.code === 'Space' && !state.running) {
       e.preventDefault();
