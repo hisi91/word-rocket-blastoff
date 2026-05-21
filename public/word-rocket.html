@@ -528,7 +528,7 @@
     state.awaitingStart = true;
     const lvl = LEVELS[0];
     showBanner('LEVEL 1', lvl.name);
-    showStartPrompt();
+    setTimeout(() => { if (state.awaitingStart) showStartPrompt(); }, 1800);
     hideChoices();
     updateHUD();
   }
