@@ -478,7 +478,7 @@
   let LEVELS = [];
   let rocketImg = null;
   const state = {
-    running: false, levelIdx: 0, score: 0, lives: 3, combo: 0,
+    running: false, paused: false, levelIdx: 0, score: 0, lives: 3, combo: 0,
     queue: [], current: null, missed: [], correct: 0, attempted: 0,
     rocket: { x: 0, y: 0, shake: 0, exploding: 0 },
     takeoff: { active: false, t0: 0, duration: 2600 },
