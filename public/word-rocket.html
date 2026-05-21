@@ -504,6 +504,8 @@
     SFX.start();
     state.levelIdx = 0; state.score = 0; state.lives = 3; state.combo = 0;
     state.missed = []; state.correct = 0; state.attempted = 0;
+    state.current = null; state.queue = [];
+    particles.length = 0;
     loadLevel();
     document.getElementById('start').classList.add('hidden');
     document.getElementById('end').classList.add('hidden');
