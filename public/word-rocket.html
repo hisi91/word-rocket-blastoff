@@ -664,8 +664,14 @@
     hideChoices();
     document.getElementById('end').classList.remove('hidden');
     const acc = state.attempted ? Math.round(100*state.correct/state.attempted) : 0;
+    const finishedAll = won && state.levelIdx >= LEVELS.length - 1;
+    const congrats = finishedAll
+      ? `<div style="margin-bottom:12px;font-size:1.4em">🎉🏆🎉</div>
+         <div style="font-size:1.2em;font-weight:bold;margin-bottom:8px">FÉLICITATIONS !</div>
+         <div style="margin-bottom:12px">Tu as terminé tous les ${LEVELS.length} niveaux !<br>Reviens plus tard pour découvrir de nouveaux niveaux 🚀</div>`
+      : '';
     document.getElementById('endStats').innerHTML =
-      `Score : <b>${state.score}</b><br>Niveau atteint : <b>${state.levelIdx+1}</b><br>Réussite : <b>${acc}%</b>${won?'<br>🏆 VICTOIRE !':''}`;
+      `${congrats}Score : <b>${state.score}</b><br>Niveau atteint : <b>${state.levelIdx+1}</b><br>Réussite : <b>${acc}%</b>${won && !finishedAll?'<br>🏆 VICTOIRE !':''}`;
     const m = document.getElementById('missed');
     m.innerHTML = state.missed.length ? '<b>Mots à réviser :</b><br>' + state.missed.join(' · ') : '<i>Aucun mot raté ! 🌟</i>';
   }
