@@ -586,7 +586,7 @@
     if (!t) return;
     document.getElementById('spoken').textContent = '🎙 ' + text;
     if (state.awaitingStart) {
-      if (t === 'start' || t.includes('start')) beginTakeoff();
+      if (/(start|go|depart|partir|stard|star)/.test(t)) beginTakeoff();
       return;
     }
     if (!state.current) return;
