@@ -1037,6 +1037,11 @@
       const wav = pcmToWav(float32, 16000);
       const heard = (await transcribe(wav)).trim();
       if (!heard) return;
+      if (state.awaitingStart) {
+        document.getElementById('spoken').textContent = `🎙 ${heard}`;
+        checkWord(heard);
+        return;
+      }
       const expected = state.current?.word || '';
       const sc = score(heard, expected, LANGS[langIdx][0]);
       document.getElementById('spoken').textContent = `🎙 ${heard} (${sc}%)`;
