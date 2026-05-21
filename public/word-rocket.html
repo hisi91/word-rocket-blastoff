@@ -760,6 +760,7 @@
 
   const GROUND_H = 80;
   function takeoffProgress() {
+    if (state.awaitingStart) return 0;
     if (!state.takeoff || !state.takeoff.active) return 1;
     const p = (performance.now() - state.takeoff.t0) / state.takeoff.duration;
     return Math.max(0, Math.min(1, p));
