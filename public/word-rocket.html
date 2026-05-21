@@ -362,7 +362,7 @@
     stops.forEach(([c, p]) => g.addColorStop(p, c));
     bctx.fillStyle = g; bctx.fillRect(0, 0, W, H);
 
-    if (!(state.takeoff && state.takeoff.active)) scrollY += (THEME_SCROLL[theme] || 2);
+    if (!state.awaitingStart && !(state.takeoff && state.takeoff.active)) scrollY += (THEME_SCROLL[theme] || 2);
     const SH = H * 2;
     const wrapY = (base, par) => {
       const y = ((base + scrollY * par) % SH + SH) % SH;
