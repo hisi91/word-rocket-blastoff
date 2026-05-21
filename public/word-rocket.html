@@ -93,6 +93,15 @@
   .mic-btn.on { background:#063; border-color:#0f8; color:#0f8; box-shadow:0 0 14px #0f86; }
   .mic-btn:disabled { opacity:.6; cursor:wait; }
   .req { color:#fc6; font-size:11px; margin-left:6px; }
+  .start-prompt { position:absolute; left:50%; top:38%; transform:translate(-50%,-50%);
+    padding:14px 22px; border-radius:14px; background:rgba(0,20,30,.7);
+    border:1px solid #0ff8; color:#0ff; font-size:clamp(16px,3.5vw,22px);
+    letter-spacing:1px; text-shadow:0 0 12px #0ff8; box-shadow:0 0 24px #0ff4;
+    z-index:24; pointer-events:none; opacity:0; transition:opacity .3s;
+    text-align:center; white-space:nowrap; }
+  .start-prompt.show { opacity:1; animation: pulseStart 1.6s ease-in-out infinite; }
+  @keyframes pulseStart { 0%,100% { transform:translate(-50%,-50%) scale(1); }
+    50% { transform:translate(-50%,-50%) scale(1.08); } }
 </style>
 </head>
 <body>
@@ -129,6 +138,7 @@
       <div class="lb-sub" id="bannerSub"></div>
     </div>
   </div>
+  <div class="start-prompt" id="startPrompt"></div>
 
   <div class="overlay" id="start">
     <div class="title">WORD ROCKET</div>
@@ -478,7 +488,7 @@
   let LEVELS = [];
   let rocketImg = null;
   const state = {
-    running: false, paused: false, levelIdx: 0, score: 0, lives: 3, combo: 0,
+    running: false, paused: false, awaitingStart: false, levelIdx: 0, score: 0, lives: 3, combo: 0,
     queue: [], current: null, missed: [], correct: 0, attempted: 0,
     rocket: { x: 0, y: 0, shake: 0, exploding: 0 },
     takeoff: { active: false, t0: 0, duration: 2600 },
@@ -512,14 +522,32 @@
     document.getElementById('topControls').style.display = 'flex';
     setPaused(false);
     state.running = true;
-    // Takeoff sequence: ground visible, rocket sits on it, then lifts off.
+    // Level 1: wait for the user to say "start" before takeoff. Rocket stays on ground.
     scrollY = 0;
-    state.takeoff = { active: true, t0: performance.now(), duration: 2600 };
+    state.takeoff = { active: false, t0: 0, duration: 2600 };
+    state.awaitingStart = true;
     const lvl = LEVELS[0];
     showBanner('LEVEL 1', lvl.name);
-    setTimeout(() => { state.takeoff.active = false; nextObject(); }, state.takeoff.duration);
+    setTimeout(() => { if (state.awaitingStart) showStartPrompt(); }, 1800);
     hideChoices();
     updateHUD();
+  }
+
+  function showStartPrompt() {
+    const el = document.getElementById('startPrompt');
+    if (el) { el.textContent = '🎤 Dis "START" pour décoller 🚀'; el.classList.add('show'); }
+  }
+  function hideStartPrompt() {
+    const el = document.getElementById('startPrompt');
+    if (el) el.classList.remove('show');
+  }
+
+  function beginTakeoff() {
+    if (!state.awaitingStart) return;
+    state.awaitingStart = false;
+    hideStartPrompt();
+    state.takeoff = { active: true, t0: performance.now(), duration: 2600 };
+    setTimeout(() => { state.takeoff.active = false; nextObject(); }, state.takeoff.duration);
   }
 
   function loadLevel() {
@@ -553,10 +581,15 @@
   const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
 
   function checkWord(text) {
-    if (!state.running || !state.current) return;
+    if (!state.running) return;
     const t = norm(text);
     if (!t) return;
     document.getElementById('spoken').textContent = '🎙 ' + text;
+    if (state.awaitingStart) {
+      if (t === 'start' || t.includes('start')) beginTakeoff();
+      return;
+    }
+    if (!state.current) return;
     if (t === norm(state.current.word)) hitTarget();
   }
 
@@ -742,6 +775,7 @@
 
   const GROUND_H = 80;
   function takeoffProgress() {
+    if (state.awaitingStart) return 0;
     if (!state.takeoff || !state.takeoff.active) return 1;
     const p = (performance.now() - state.takeoff.t0) / state.takeoff.duration;
     return Math.max(0, Math.min(1, p));
