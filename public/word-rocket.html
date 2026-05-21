@@ -670,10 +670,20 @@
 
   function endGame(won) {
     state.running = false;
+    setPaused(false);
+    document.getElementById('topControls').style.display = 'none';
     hideChoices();
     document.getElementById('end').classList.remove('hidden');
     const acc = state.attempted ? Math.round(100*state.correct/state.attempted) : 0;
     const finishedAll = won && state.levelIdx >= LEVELS.length - 1;
+    const endTitle = document.getElementById('endTitle');
+    if (finishedAll) {
+      endTitle.textContent = 'CONGRATULATIONS';
+      endTitle.style.color = '#ffd54a';
+    } else {
+      endTitle.textContent = 'GAME OVER';
+      endTitle.style.color = '';
+    }
     const congrats = finishedAll
       ? `<div style="margin-bottom:12px;font-size:1.4em">🎉🏆🎉</div>
          <div style="font-size:1.2em;font-weight:bold;margin-bottom:8px">FÉLICITATIONS !</div>
