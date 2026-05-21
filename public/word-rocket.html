@@ -362,7 +362,7 @@
     stops.forEach(([c, p]) => g.addColorStop(p, c));
     bctx.fillStyle = g; bctx.fillRect(0, 0, W, H);
 
-    if (!(state.takeoff && state.takeoff.active)) scrollY += (THEME_SCROLL[theme] || 2);
+    if (!state.awaitingStart && !(state.takeoff && state.takeoff.active)) scrollY += (THEME_SCROLL[theme] || 2);
     const SH = H * 2;
     const wrapY = (base, par) => {
       const y = ((base + scrollY * par) % SH + SH) % SH;
@@ -586,7 +586,7 @@
     if (!t) return;
     document.getElementById('spoken').textContent = '🎙 ' + text;
     if (state.awaitingStart) {
-      if (t === 'start' || t.includes('start')) beginTakeoff();
+      if (/(start|go|depart|partir|stard|star)/.test(t)) beginTakeoff();
       return;
     }
     if (!state.current) return;
@@ -1037,6 +1037,11 @@
       const wav = pcmToWav(float32, 16000);
       const heard = (await transcribe(wav)).trim();
       if (!heard) return;
+      if (state.awaitingStart) {
+        document.getElementById('spoken').textContent = `🎙 ${heard}`;
+        checkWord(heard);
+        return;
+      }
       const expected = state.current?.word || '';
       const sc = score(heard, expected, LANGS[langIdx][0]);
       document.getElementById('spoken').textContent = `🎙 ${heard} (${sc}%)`;
