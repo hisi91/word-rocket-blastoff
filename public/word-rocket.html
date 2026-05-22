@@ -664,17 +664,22 @@
       window.speechSynthesis.speak(u);
     } catch(e) { speakingWord = false; }
   }
+  let speakSeq = 0;
   async function speak(text) {
     if (!text) return;
+    const mySeq = ++speakSeq; // cancels any in-flight speak()
     speechUnlocked = true;
     const shouldResumeVad = recOn && micVad && !speakingWord;
     if (shouldResumeVad) micVad.pause();
     speakingWord = true;
     try { window.speechSynthesis?.cancel(); } catch {}
-    if (ttsAudio) { try { ttsAudio.pause(); } catch {} ttsAudio = null; }
+    if (ttsAudio) { try { ttsAudio.pause(); ttsAudio.currentTime = 0; } catch {} ttsAudio = null; }
 
     const url = await fetchTTS(text);
+    if (mySeq !== speakSeq) return; // a newer speak() superseded us
     if (!url) { speakFallback(text); return; }
+    // Stop again in case another speak landed during fetch
+    if (ttsAudio) { try { ttsAudio.pause(); ttsAudio.currentTime = 0; } catch {} ttsAudio = null; }
     const a = new Audio(url);
     ttsAudio = a;
     a.volume = muted ? 0 : 1;
