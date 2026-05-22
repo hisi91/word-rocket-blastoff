@@ -1131,8 +1131,13 @@
   document.getElementById('pauseBtn').addEventListener('click', () => { if (state.running) setPaused(!state.paused); });
   document.getElementById('restartBtn').addEventListener('click', () => { unlockSpeech(); startGame(); });
   document.getElementById('homeBtn').addEventListener('click', () => {
-    try { window.top.location.href = '/'; }
-    catch(e) { try { window.parent.location.href = '/'; } catch(_) { window.location.href = '/'; } }
+    // Stop game + audio + mic before navigating so nothing blocks the redirect
+    try { state.running = false; state.awaitingStart = false; } catch(_) {}
+    try { window.speechSynthesis?.cancel(); } catch(_) {}
+    try { if (ttsAudio) { ttsAudio.pause(); ttsAudio.currentTime = 0; ttsAudio = null; } } catch(_) {}
+    try { if (micVad) micVad.pause(); } catch(_) {}
+    const go = (w) => { try { w.location.href = '/'; return true; } catch(_) { return false; } };
+    if (!go(window.top) && !go(window.parent)) window.location.href = '/';
   });
   window.addEventListener('keydown', e => {
     if (e.code === 'Space' && !state.running) {
