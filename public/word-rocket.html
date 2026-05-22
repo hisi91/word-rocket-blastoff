@@ -124,6 +124,7 @@
   <div class="top-controls" id="topControls" style="display:none">
     <button id="pauseBtn" title="Pause">⏸</button>
     <button id="restartBtn" title="Restart">↻</button>
+    <button id="homeBtn" title="Home">🏠</button>
   </div>
   <div class="side-controls">
     <button id="mic">🎤</button>
@@ -1129,6 +1130,7 @@
   document.getElementById('replayBtn').addEventListener('click', () => { unlockSpeech(); startGame(); });
   document.getElementById('pauseBtn').addEventListener('click', () => { if (state.running) setPaused(!state.paused); });
   document.getElementById('restartBtn').addEventListener('click', () => { unlockSpeech(); startGame(); });
+  document.getElementById('homeBtn').addEventListener('click', () => { window.parent.location.href = '/'; });
   window.addEventListener('keydown', e => {
     if (e.code === 'Space' && !state.running) {
       e.preventDefault();
