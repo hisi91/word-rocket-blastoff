@@ -877,6 +877,29 @@
     if (btn) btn.textContent = state.paused ? '▶' : '⏸';
   }
 
+  function stopEverythingForHome() {
+    state.running = false;
+    state.paused = true;
+    state.awaitingStart = false;
+    state.current = null;
+    state.queue = [];
+    state.takeoff = { active: false, t0: 0, duration: 2600 };
+    particles.length = 0;
+    speakSeq++;
+    speakingWord = false;
+    busy = false;
+    recOn = false;
+    hideStartPrompt();
+    hideChoices();
+    try { window.speechSynthesis?.cancel(); } catch(_) {}
+    try { if (ttsAudio) { ttsAudio.pause(); ttsAudio.currentTime = 0; ttsAudio = null; } } catch(_) {}
+    try { if (micVad) micVad.pause(); } catch(_) {}
+    try { actx?.suspend?.(); } catch(_) {}
+    document.getElementById('topControls').style.display = 'none';
+    document.getElementById('end').classList.add('hidden');
+    document.getElementById('start').classList.remove('hidden');
+  }
+
   function drawParticles() {
     for (let i=particles.length-1; i>=0; i--) {
       const p = particles[i];
@@ -1136,13 +1159,8 @@
   document.getElementById('pauseBtn').addEventListener('click', () => { if (state.running) setPaused(!state.paused); });
   document.getElementById('restartBtn').addEventListener('click', () => { unlockSpeech(); startGame(); });
   document.getElementById('homeBtn').addEventListener('click', () => {
-    // Stop game + audio + mic before navigating so nothing blocks the redirect
-    try { state.running = false; state.awaitingStart = false; } catch(_) {}
-    try { window.speechSynthesis?.cancel(); } catch(_) {}
-    try { if (ttsAudio) { ttsAudio.pause(); ttsAudio.currentTime = 0; ttsAudio = null; } } catch(_) {}
-    try { if (micVad) micVad.pause(); } catch(_) {}
-    const go = (w) => { try { w.location.href = '/'; return true; } catch(_) { return false; } };
-    if (!go(window.top) && !go(window.parent)) window.location.href = '/';
+    stopEverythingForHome();
+    try { window.parent.postMessage({ type: 'word-rocket-home' }, '*'); } catch(_) {}
   });
   window.addEventListener('keydown', e => {
     if (e.code === 'Space' && !state.running) {
