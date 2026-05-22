@@ -12,7 +12,9 @@ function Index() {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type !== "word-rocket-home") return;
       const frame = iframeRef.current;
-      if (frame) frame.src = "/word-rocket.html";
+      if (!frame || event.source !== frame.contentWindow) return;
+      frame.src = "about:blank";
+      window.setTimeout(() => { frame.src = "/word-rocket.html"; }, 0);
     };
 
     window.addEventListener("message", handleMessage);
