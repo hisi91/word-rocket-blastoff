@@ -877,6 +877,29 @@
     if (btn) btn.textContent = state.paused ? '▶' : '⏸';
   }
 
+  function stopEverythingForHome() {
+    state.running = false;
+    state.paused = true;
+    state.awaitingStart = false;
+    state.current = null;
+    state.queue = [];
+    state.takeoff = { active: false, t0: 0, duration: 2600 };
+    particles.length = 0;
+    speakSeq++;
+    speakingWord = false;
+    busy = false;
+    recOn = false;
+    hideStartPrompt();
+    hideChoices();
+    try { window.speechSynthesis?.cancel(); } catch(_) {}
+    try { if (ttsAudio) { ttsAudio.pause(); ttsAudio.currentTime = 0; ttsAudio = null; } } catch(_) {}
+    try { if (micVad) micVad.pause(); } catch(_) {}
+    try { actx?.suspend?.(); } catch(_) {}
+    document.getElementById('topControls').style.display = 'none';
+    document.getElementById('end').classList.add('hidden');
+    document.getElementById('start').classList.remove('hidden');
+  }
+
   function drawParticles() {
     for (let i=particles.length-1; i>=0; i--) {
       const p = particles[i];
