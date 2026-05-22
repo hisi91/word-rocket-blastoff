@@ -1130,7 +1130,10 @@
   document.getElementById('replayBtn').addEventListener('click', () => { unlockSpeech(); startGame(); });
   document.getElementById('pauseBtn').addEventListener('click', () => { if (state.running) setPaused(!state.paused); });
   document.getElementById('restartBtn').addEventListener('click', () => { unlockSpeech(); startGame(); });
-  document.getElementById('homeBtn').addEventListener('click', () => { window.parent.location.href = '/'; });
+  document.getElementById('homeBtn').addEventListener('click', () => {
+    try { window.top.location.href = '/'; }
+    catch(e) { try { window.parent.location.href = '/'; } catch(_) { window.location.href = '/'; } }
+  });
   window.addEventListener('keydown', e => {
     if (e.code === 'Space' && !state.running) {
       e.preventDefault();
