@@ -664,17 +664,22 @@
       window.speechSynthesis.speak(u);
     } catch(e) { speakingWord = false; }
   }
+  let speakSeq = 0;
   async function speak(text) {
     if (!text) return;
+    const mySeq = ++speakSeq; // cancels any in-flight speak()
     speechUnlocked = true;
     const shouldResumeVad = recOn && micVad && !speakingWord;
     if (shouldResumeVad) micVad.pause();
     speakingWord = true;
     try { window.speechSynthesis?.cancel(); } catch {}
-    if (ttsAudio) { try { ttsAudio.pause(); } catch {} ttsAudio = null; }
+    if (ttsAudio) { try { ttsAudio.pause(); ttsAudio.currentTime = 0; } catch {} ttsAudio = null; }
 
     const url = await fetchTTS(text);
+    if (mySeq !== speakSeq) return; // a newer speak() superseded us
     if (!url) { speakFallback(text); return; }
+    // Stop again in case another speak landed during fetch
+    if (ttsAudio) { try { ttsAudio.pause(); ttsAudio.currentTime = 0; } catch {} ttsAudio = null; }
     const a = new Audio(url);
     ttsAudio = a;
     a.volume = muted ? 0 : 1;
@@ -925,7 +930,7 @@
         [...choicesEl.children].forEach(c => c.disabled = true);
         b.classList.add(isGood ? 'good' : 'bad');
         if (isGood) checkWord(w);
-        else { speak(state.current.word); loseLife(); }
+        else { loseLife(); }
       });
       choicesEl.appendChild(b);
     });
@@ -1131,8 +1136,13 @@
   document.getElementById('pauseBtn').addEventListener('click', () => { if (state.running) setPaused(!state.paused); });
   document.getElementById('restartBtn').addEventListener('click', () => { unlockSpeech(); startGame(); });
   document.getElementById('homeBtn').addEventListener('click', () => {
-    try { window.top.location.href = '/'; }
-    catch(e) { try { window.parent.location.href = '/'; } catch(_) { window.location.href = '/'; } }
+    // Stop game + audio + mic before navigating so nothing blocks the redirect
+    try { state.running = false; state.awaitingStart = false; } catch(_) {}
+    try { window.speechSynthesis?.cancel(); } catch(_) {}
+    try { if (ttsAudio) { ttsAudio.pause(); ttsAudio.currentTime = 0; ttsAudio = null; } } catch(_) {}
+    try { if (micVad) micVad.pause(); } catch(_) {}
+    const go = (w) => { try { w.location.href = '/'; return true; } catch(_) { return false; } };
+    if (!go(window.top) && !go(window.parent)) window.location.href = '/';
   });
   window.addEventListener('keydown', e => {
     if (e.code === 'Space' && !state.running) {
