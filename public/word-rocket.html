@@ -930,7 +930,7 @@
         [...choicesEl.children].forEach(c => c.disabled = true);
         b.classList.add(isGood ? 'good' : 'bad');
         if (isGood) checkWord(w);
-        else { speak(state.current.word); loseLife(); }
+        else { loseLife(); }
       });
       choicesEl.appendChild(b);
     });
