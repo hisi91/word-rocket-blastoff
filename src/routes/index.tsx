@@ -14,7 +14,9 @@ function Index() {
       const frame = iframeRef.current;
       if (!frame || event.source !== frame.contentWindow) return;
       frame.src = "about:blank";
-      window.setTimeout(() => { frame.src = "/word-rocket.html"; }, 0);
+      window.setTimeout(() => {
+        frame.src = "/word-rocket.html";
+      }, 0);
     };
 
     window.addEventListener("message", handleMessage);
