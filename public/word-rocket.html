@@ -621,14 +621,32 @@
     if (v) u.voice = v;
     return u;
   }
+  // Silent ~0.05s WAV used to unlock HTMLAudioElement on iOS/Android
+  const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
   function unlockSpeech() {
     try {
-      if (speechUnlocked || !('speechSynthesis' in window)) return;
-      speechUnlocked = true;
-      window.speechSynthesis.resume?.();
-      const u = buildUtterance(' ', 0);
-      u.onend = () => window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
+      if ('speechSynthesis' in window && !speechUnlocked) {
+        speechUnlocked = true;
+        window.speechSynthesis.resume?.();
+        const u = buildUtterance(' ', 0);
+        u.onend = () => window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(u);
+      }
+    } catch(e) {}
+    // Unlock a persistent HTMLAudioElement during the user gesture so that
+    // later async .play() calls (after fetch) are allowed on mobile.
+    try {
+      if (!ttsAudio) {
+        const a = new Audio();
+        a.preload = 'auto';
+        a.playsInline = true;
+        a.setAttribute('playsinline', '');
+        a.setAttribute('webkit-playsinline', '');
+        a.src = SILENT_WAV;
+        const p = a.play();
+        if (p && p.then) p.then(() => { try { a.pause(); a.currentTime = 0; } catch(_){} }).catch(()=>{});
+        ttsAudio = a;
+      }
     } catch(e) {}
   }
   // --- Groq Orpheus TTS (cached) with speechSynthesis fallback ---
@@ -668,29 +686,32 @@
   async function speak(text) {
     if (!text) return;
     const mySeq = ++speakSeq; // cancels any in-flight speak()
-    speechUnlocked = true;
     const shouldResumeVad = recOn && micVad && !speakingWord;
     if (shouldResumeVad) micVad.pause();
     speakingWord = true;
     try { window.speechSynthesis?.cancel(); } catch {}
-    if (ttsAudio) { try { ttsAudio.pause(); ttsAudio.currentTime = 0; } catch {} ttsAudio = null; }
+    // Pause any prior playback but KEEP the unlocked element so mobile
+    // browsers continue to allow programmatic playback.
+    if (ttsAudio) { try { ttsAudio.pause(); ttsAudio.currentTime = 0; } catch {} }
 
     const url = await fetchTTS(text);
     if (mySeq !== speakSeq) return; // a newer speak() superseded us
     if (!url) { speakFallback(text); return; }
-    // Stop again in case another speak landed during fetch
-    if (ttsAudio) { try { ttsAudio.pause(); ttsAudio.currentTime = 0; } catch {} ttsAudio = null; }
-    const a = new Audio(url);
+
+    // Reuse the persistent (already-unlocked) element when available.
+    const a = ttsAudio || new Audio();
     ttsAudio = a;
+    try { a.playsInline = true; a.setAttribute('playsinline',''); a.setAttribute('webkit-playsinline',''); } catch(_){}
     a.volume = muted ? 0 : 1;
     const done = () => {
       speakingWord = false;
-      if (ttsAudio === a) ttsAudio = null;
+      a.onended = null; a.onerror = null;
       if (shouldResumeVad && recOn && micVad) micVad.start();
     };
     a.onended = done;
     a.onerror = () => { done(); speakFallback(text); };
-    try { await a.play(); } catch { done(); speakFallback(text); }
+    try { a.src = url; a.load(); } catch(_){}
+    try { const p = a.play(); if (p && p.then) await p; } catch { done(); speakFallback(text); }
   }
 
   function loseLife() {
