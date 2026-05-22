@@ -621,14 +621,32 @@
     if (v) u.voice = v;
     return u;
   }
+  // Silent ~0.05s WAV used to unlock HTMLAudioElement on iOS/Android
+  const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
   function unlockSpeech() {
     try {
-      if (speechUnlocked || !('speechSynthesis' in window)) return;
-      speechUnlocked = true;
-      window.speechSynthesis.resume?.();
-      const u = buildUtterance(' ', 0);
-      u.onend = () => window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
+      if ('speechSynthesis' in window && !speechUnlocked) {
+        speechUnlocked = true;
+        window.speechSynthesis.resume?.();
+        const u = buildUtterance(' ', 0);
+        u.onend = () => window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(u);
+      }
+    } catch(e) {}
+    // Unlock a persistent HTMLAudioElement during the user gesture so that
+    // later async .play() calls (after fetch) are allowed on mobile.
+    try {
+      if (!ttsAudio) {
+        const a = new Audio();
+        a.preload = 'auto';
+        a.playsInline = true;
+        a.setAttribute('playsinline', '');
+        a.setAttribute('webkit-playsinline', '');
+        a.src = SILENT_WAV;
+        const p = a.play();
+        if (p && p.then) p.then(() => { try { a.pause(); a.currentTime = 0; } catch(_){} }).catch(()=>{});
+        ttsAudio = a;
+      }
     } catch(e) {}
   }
   // --- Groq Orpheus TTS (cached) with speechSynthesis fallback ---
