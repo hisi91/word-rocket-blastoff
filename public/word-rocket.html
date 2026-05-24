@@ -1202,6 +1202,7 @@
   fetchLevels().then(async (levels) => {
     LEVELS = levels.filter(l => l.level_objects && l.level_objects.length > 0);
     rocketImg = loadImg('shared/rocket.webp');
+    flameImg = loadImg('shared/flame.webp');
     const statusEl = document.getElementById('loadStatus');
 
     // Start immediately: only warm image cache in the background.
