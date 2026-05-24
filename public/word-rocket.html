@@ -469,8 +469,9 @@
     const img = new Image();
     img.crossOrigin = "anonymous";
     const wrap = { complete: false, naturalWidth: 0, naturalHeight: 0, _src: null };
+    const skipKey = path.startsWith('shared/');
     img.onload = () => {
-      const processed = keyOutWhite(img);
+      const processed = skipKey ? img : keyOutWhite(img);
       wrap._src = processed;
       wrap.naturalWidth = processed.width || img.naturalWidth;
       wrap.naturalHeight = processed.height || img.naturalHeight;
