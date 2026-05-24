@@ -889,6 +889,9 @@
     }
     // Draw rocket on top of flame
     drawImageContained(pctx, rocketImg, r.x + sx, r.y + sy, ROCKET_SIZE);
+  }
+
+
 
   function drawFalling(obj, now) {
     if (!state.paused) obj.y += obj.vy;
