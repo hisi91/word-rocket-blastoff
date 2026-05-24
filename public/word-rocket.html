@@ -867,7 +867,7 @@
     const flameW = flameBaseW * (1 + Math.sin(t * 22) * 0.06) * Math.min(1.4, liftBoost);
     const flameCx = r.x + sx + Math.sin(t * 14) * 1.5;
     const flameTopY = r.y + ROCKET_SIZE/2 - 18 + sy; // tucked inside nozzle
-    if (flameImg && flameImg.complete) {
+    if (flameImg && flameImg.complete && flameImg._src) {
       pctx.save();
       pctx.globalAlpha = 0.92 + Math.sin(t * 25) * 0.08;
       pctx.translate(flameCx, flameTopY);
@@ -876,7 +876,7 @@
       // additive glow
       pctx.shadowColor = 'rgba(255,180,40,0.9)';
       pctx.shadowBlur = 18 + Math.sin(t * 16) * 6;
-      pctx.drawImage(flameImg, -flameW/2, 0, flameW, flameH);
+      pctx.drawImage(flameImg._src, -flameW/2, 0, flameW, flameH);
       pctx.restore();
       // bright inner core glow on top
       pctx.save();
