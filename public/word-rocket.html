@@ -995,8 +995,8 @@
     const t = performance.now() / 1000;
     const liftBoost = state.takeoff && state.takeoff.active ? (1 + (1-p)*1.6) : 1;
     // Flame size & wobble animation
-    const flameBaseH = ROCKET_SIZE * 0.325;
-    const flameBaseW = ROCKET_SIZE * 0.21;
+    const flameBaseH = ROCKET_SIZE * 0.195;
+    const flameBaseW = ROCKET_SIZE * 0.126;
     const wobble = Math.sin(t * 18) * 0.08 + Math.sin(t * 11) * 0.05;
     const flicker = 0.92 + Math.sin(t * 30) * 0.06 + Math.random() * 0.04;
     const flameH = flameBaseH * (1 + wobble) * liftBoost * flicker;
