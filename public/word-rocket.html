@@ -995,14 +995,14 @@
     const t = performance.now() / 1000;
     const liftBoost = state.takeoff && state.takeoff.active ? (1 + (1-p)*1.6) : 1;
     // Flame size & wobble animation
-    const flameBaseH = ROCKET_SIZE * 0.55;
-    const flameBaseW = ROCKET_SIZE * 0.40;
+    const flameBaseH = ROCKET_SIZE * 0.60;
+    const flameBaseW = ROCKET_SIZE * 0.35;
     const wobble = Math.sin(t * 18) * 0.08 + Math.sin(t * 11) * 0.05;
     const flicker = 0.92 + Math.sin(t * 30) * 0.06 + Math.random() * 0.04;
     const flameH = flameBaseH * (1 + wobble) * liftBoost * flicker;
     const flameW = flameBaseW * (1 + Math.sin(t * 22) * 0.06) * Math.min(1.4, liftBoost);
     const flameCx = r.x + sx + Math.sin(t * 14) * 1.5;
-    const flameTopY = r.y + ROCKET_SIZE/2 - 14 + sy; // tucked inside nozzle
+    const flameTopY = r.y + ROCKET_SIZE/2 - 18 + sy; // tucked inside nozzle
     if (flameImg && flameImg.complete && flameImg._src) {
       pctx.save();
       pctx.globalAlpha = 0.92 + Math.sin(t * 25) * 0.08;
