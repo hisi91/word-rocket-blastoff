@@ -854,31 +854,41 @@
       r.exploding--;
       if (r.exploding % 4 < 2) return;
     }
-    // Draw rocket first so flame appears to emerge from inside the nozzle
+    // Draw flame BEHIND rocket so it emerges from the nozzle
+    const t = performance.now() / 1000;
+    const liftBoost = state.takeoff && state.takeoff.active ? (1 + (1-p)*1.6) : 1;
+    // Flame size & wobble animation
+    const flameBaseH = ROCKET_SIZE * 0.65;
+    const flameBaseW = ROCKET_SIZE * 0.42;
+    const wobble = Math.sin(t * 18) * 0.08 + Math.sin(t * 11) * 0.05;
+    const flicker = 0.92 + Math.sin(t * 30) * 0.06 + Math.random() * 0.04;
+    const flameH = flameBaseH * (1 + wobble) * liftBoost * flicker;
+    const flameW = flameBaseW * (1 + Math.sin(t * 22) * 0.06) * Math.min(1.4, liftBoost);
+    const flameCx = r.x + sx + Math.sin(t * 14) * 1.5;
+    const flameTopY = r.y + ROCKET_SIZE/2 - 18 + sy; // tucked inside nozzle
+    if (flameImg && flameImg.complete) {
+      pctx.save();
+      pctx.globalAlpha = 0.92 + Math.sin(t * 25) * 0.08;
+      pctx.translate(flameCx, flameTopY);
+      // slight horizontal sway
+      pctx.rotate(Math.sin(t * 9) * 0.04);
+      // additive glow
+      pctx.shadowColor = 'rgba(255,180,40,0.9)';
+      pctx.shadowBlur = 18 + Math.sin(t * 16) * 6;
+      pctx.drawImage(flameImg, -flameW/2, 0, flameW, flameH);
+      pctx.restore();
+      // bright inner core glow on top
+      pctx.save();
+      pctx.globalCompositeOperation = 'lighter';
+      const coreGrad = pctx.createRadialGradient(flameCx, flameTopY + flameH*0.25, 2, flameCx, flameTopY + flameH*0.25, flameW*0.45);
+      coreGrad.addColorStop(0, 'rgba(255,255,210,0.85)');
+      coreGrad.addColorStop(1, 'rgba(255,200,80,0)');
+      pctx.fillStyle = coreGrad;
+      pctx.fillRect(flameCx - flameW, flameTopY - 4, flameW*2, flameH*0.7);
+      pctx.restore();
+    }
+    // Draw rocket on top of flame
     drawImageContained(pctx, rocketImg, r.x + sx, r.y + sy, ROCKET_SIZE);
-    // flame: start INSIDE the rocket body so it looks like it's coming out of it
-    const liftBoost = state.takeoff && state.takeoff.active ? (1 + (1-p)*1.8) : 1;
-    const flameH = (28 + Math.sin(performance.now()/60)*10) * liftBoost;
-    const flameW = 16 * Math.min(1.6, liftBoost);
-    const flameTopY = r.y + ROCKET_SIZE/2 - 28; // inside the rocket
-    const flameBotY = r.y + ROCKET_SIZE/2 - 8 + flameH;
-    const fg = pctx.createLinearGradient(0, flameTopY, 0, flameBotY);
-    fg.addColorStop(0,'#fff8a0'); fg.addColorStop(0.35,'#ff0'); fg.addColorStop(0.7,'#f80'); fg.addColorStop(1,'#f0000000');
-    pctx.fillStyle = fg;
-    pctx.beginPath();
-    pctx.moveTo(r.x - flameW + sx, flameTopY + sy);
-    pctx.quadraticCurveTo(r.x - flameW*1.2 + sx, (flameTopY+flameBotY)/2 + sy, r.x - flameW*0.5 + sx, flameBotY + sy);
-    pctx.lineTo(r.x + sx, flameBotY + 8 + sy);
-    pctx.lineTo(r.x + flameW*0.5 + sx, flameBotY + sy);
-    pctx.quadraticCurveTo(r.x + flameW*1.2 + sx, (flameTopY+flameBotY)/2 + sy, r.x + flameW + sx, flameTopY + sy);
-    pctx.closePath(); pctx.fill();
-    // bright inner core
-    pctx.fillStyle = 'rgba(255,255,220,0.9)';
-    pctx.beginPath();
-    pctx.moveTo(r.x - flameW*0.4 + sx, flameTopY + 4 + sy);
-    pctx.quadraticCurveTo(r.x + sx, flameBotY*0.85 + flameTopY*0.15 + sy, r.x + flameW*0.4 + sx, flameTopY + 4 + sy);
-    pctx.closePath(); pctx.fill();
-  }
 
   function drawFalling(obj, now) {
     if (!state.paused) obj.y += obj.vy;
