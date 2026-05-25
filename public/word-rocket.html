@@ -1002,7 +1002,7 @@
     const flameH = flameBaseH * (1 + wobble) * liftBoost * flicker;
     const flameW = flameBaseW * (1 + Math.sin(t * 22) * 0.06) * Math.min(1.4, liftBoost);
     const flameCx = r.x + sx + Math.sin(t * 14) * 1.5;
-    const flameTopY = r.y + ROCKET_SIZE/2 - 35 + sy; // tucked inside nozzle
+    const flameTopY = r.y + ROCKET_SIZE/2 - 36 + sy; // tucked inside nozzle
     if (flameImg && flameImg.complete && flameImg._src) {
       pctx.save();
       pctx.globalAlpha = 0.92 + Math.sin(t * 25) * 0.08;
