@@ -21,9 +21,9 @@
   .bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 14px 14px 14px;
     display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 10; }
   .side-controls { position: absolute; left: 8px; top: 56px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
-  .side-controls button { padding: 6px 8px; font-size: 12px; min-width: 40px; text-align: center; }
+  .side-controls button { padding: 4px; font-size: 12px; min-width: 40px; text-align: center; }
   .top-controls { position: absolute; right: 8px; top: 56px; display: flex; flex-direction: column; gap: 6px; z-index: 20; }
-  .top-controls button { padding: 6px 10px; font-size: 14px; min-width: 40px; text-align: center; background: rgba(0,0,0,.55); border: 2px solid #0ff8; color: #0ff; border-radius: 6px; backdrop-filter: blur(4px); }
+  .top-controls button { padding: 4px; font-size: 14px; min-width: 40px; text-align: center; background: rgba(0,0,0,.55); border: 2px solid #0ff8; color: #0ff; border-radius: 6px; backdrop-filter: blur(4px); }
   .top-controls button:hover { background: rgba(0,40,60,.8); }
   #choices { display: flex; gap: 8px; justify-content: center; flex-wrap: nowrap;
     width: min(560px, calc(100vw - 28px)); margin: 0 auto; }
@@ -40,6 +40,17 @@
   button { font-family: inherit; cursor: pointer; padding: 8px 14px; border-radius: 8px;
     border: 2px solid #0ff; background: rgba(0,30,40,.7); color: #0ff; font-size: 14px; }
   button.on { background: #0ff; color: #021; }
+  .ui-icon { width: 28px; height: 28px; object-fit: contain; display: inline-block; vertical-align: middle; pointer-events: none; }
+  .icon-only { width: 46px; height: 46px; display: inline-flex; align-items: center; justify-content: center; position: relative; overflow: visible; }
+  .icon-only .ui-icon { width: 38px; height: 38px; }
+  .icon-text { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+  .icon-text .ui-icon { width: 34px; height: 34px; margin-left: -8px; }
+  .text-chip { gap: 4px; color:#fff; font-size:12px; }
+  .text-chip .ui-icon { width: 30px; height: 30px; }
+  #langLabel { position:absolute; right:-5px; bottom:-4px; font-size:13px; line-height:1;
+    padding:1px 2px; border-radius:6px; background:rgba(0,0,0,.85); box-shadow:0 0 6px #0ff6; }
+  .label-icon { width:20px; height:20px; object-fit:contain; vertical-align:-5px; margin-right:6px; }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
   #spoken { min-height: 22px; font-size: 13px; color: #fff; opacity: .9; text-align: center; text-shadow: 0 0 4px #000; }
   .feedback { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%);
     font-size: 36px; font-weight: bold; opacity: 0; pointer-events: none; z-index: 20;
@@ -60,7 +71,7 @@
     color: transparent; animation: shimmer 3s linear infinite; }
   @keyframes shimmer { to { background-position: 300% 0; } }
   .subtitle { font-size: 14px; color: #bbb; max-width: 480px; line-height: 1.6; }
-  .big { padding: 14px 32px; font-size: 18px; letter-spacing: 3px; }
+  .big { padding: 12px 28px; font-size: 18px; letter-spacing: 3px; }
   .endlist { max-width: 90vw; max-height: 30vh; overflow-y: auto; padding: 10px;
     border: 1px solid #0ff8; border-radius: 8px; background: rgba(0,0,0,.4); font-size: 13px; color: #fc6; }
   .level-banner { position: absolute; inset: 0; display: flex; align-items: center;
@@ -137,14 +148,14 @@
     <div id="choices"></div>
   </div>
   <div class="top-controls" id="topControls" style="display:none">
-    <button id="pauseBtn" title="Pause">⏸</button>
-    <button id="restartBtn" title="Restart">↻</button>
-    <button id="homeBtn" title="Home">🏠</button>
+    <button id="pauseBtn" class="icon-only" title="Pause" aria-label="Pause"><img class="ui-icon" src="ui-icons/pause.png" alt=""></button>
+    <button id="restartBtn" class="icon-only" title="Restart" aria-label="Restart"><img class="ui-icon" src="ui-icons/undo.png" alt=""></button>
+    <button id="homeBtn" class="icon-only" title="Home" aria-label="Home"><img class="ui-icon" src="ui-icons/home.png" alt=""></button>
   </div>
   <div class="side-controls">
-    <button id="mic">🎤</button>
-    <button id="lang">🇬🇧</button>
-    <button id="mute">🔊</button>
+    <button id="mic" class="icon-only" title="Micro" aria-label="Micro"><img class="ui-icon" src="ui-icons/music.png" alt=""><span id="micLabel" class="sr-only">Micro</span></button>
+    <button id="lang" class="icon-only text-chip" title="Language" aria-label="Language"><img class="ui-icon" src="ui-icons/help.png" alt=""><span id="langLabel">🇬🇧</span></button>
+    <button id="mute" class="icon-only" title="Sound" aria-label="Sound"><img class="ui-icon" src="ui-icons/volume.png" alt=""></button>
   </div>
 
   <div class="feedback" id="feedback"></div>
@@ -164,25 +175,25 @@
     <div id="loadStatus" class="loading">Chargement des niveaux...</div>
     <div class="start-options">
       <label class="opt-row">
-        <span class="lbl">🔊 Prononcer le nom à l'apparition
+        <span class="lbl"><img class="label-icon" src="ui-icons/volume.png" alt="">Prononcer le nom à l'apparition
           <span class="hint">L'objet est lu à voix haute quand il apparaît</span>
         </span>
         <input type="checkbox" id="optSpeak" class="toggle" />
       </label>
       <label class="opt-row">
-        <span class="lbl">🔤 Choix multiples (QCM)
+        <span class="lbl"><img class="label-icon" src="ui-icons/menu.png" alt="">Choix multiples (QCM)
           <span class="hint">Affiche 3 propositions à choisir</span>
         </span>
         <input type="checkbox" id="optText" class="toggle" />
       </label>
       <div class="opt-row">
-        <span class="lbl">🎤 Activer le microphone<span class="req">requis</span>
+        <span class="lbl"><img class="label-icon" src="ui-icons/music.png" alt="">Activer le microphone<span class="req">requis</span>
           <span class="hint">Nécessaire pour reconnaître ta voix</span>
         </span>
         <button type="button" id="optMic" class="mic-btn">Activer</button>
       </div>
     </div>
-    <button class="big" id="startBtn" disabled>START</button>
+    <button class="big icon-text" id="startBtn" disabled><img class="ui-icon" src="ui-icons/play.png" alt="">START</button>
     <div class="subtitle">Cliquez ou appuyez sur ESPACE</div>
   </div>
 
@@ -197,9 +208,9 @@
     <div id="endStats" style="font-size:18px;line-height:1.8"></div>
     <div id="missed" class="endlist"></div>
     <div class="end-actions">
-      <button class="big" id="retryBtn">RETRY</button>
-      <button class="big" id="nextLevelBtn">NEXT LEVEL</button>
-      <button class="big" id="levelSelectBtn">LEVEL SELECT</button>
+      <button class="big icon-text" id="retryBtn"><img class="ui-icon" src="ui-icons/undo.png" alt="">RETRY</button>
+      <button class="big icon-text" id="nextLevelBtn"><img class="ui-icon" src="ui-icons/right.png" alt="">NEXT LEVEL</button>
+      <button class="big icon-text" id="levelSelectBtn"><img class="ui-icon" src="ui-icons/menu.png" alt="">LEVEL SELECT</button>
     </div>
   </div>
 </div>
@@ -923,6 +934,14 @@
     document.getElementById('bannerSub').textContent = sub || '';
     b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
   }
+  function setButtonIcon(id, icon, label) {
+    const btn = document.getElementById(id);
+    const img = btn?.querySelector('img.ui-icon');
+    if (!btn || !img) return;
+    img.src = `ui-icons/${icon}.png`;
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+  }
 
   // ===== Render =====
   function drawImageContained(ctx, img, cx, cy, size) {
@@ -995,8 +1014,8 @@
     const t = performance.now() / 1000;
     const liftBoost = state.takeoff && state.takeoff.active ? (1 + (1-p)*1.6) : 1;
     // Flame size & wobble animation
-    const flameBaseH = ROCKET_SIZE * 0.60;
-    const flameBaseW = ROCKET_SIZE * 0.35;
+    const flameBaseH = ROCKET_SIZE * 0.455;
+    const flameBaseW = ROCKET_SIZE * 0.294;
     const wobble = Math.sin(t * 18) * 0.08 + Math.sin(t * 11) * 0.05;
     const flicker = 0.92 + Math.sin(t * 30) * 0.06 + Math.random() * 0.04;
     const flameH = flameBaseH * (1 + wobble) * liftBoost * flicker;
@@ -1045,8 +1064,7 @@
 
   function setPaused(p) {
     state.paused = !!p;
-    const btn = document.getElementById('pauseBtn');
-    if (btn) btn.textContent = state.paused ? '▶' : '⏸';
+    setButtonIcon('pauseBtn', state.paused ? 'play' : 'pause', state.paused ? 'Resume' : 'Pause');
   }
 
   function stopEverythingForHome() {
@@ -1302,7 +1320,9 @@
       recOn = wantOn;
       if (recOn) { v.start(); micReady = true; } else { v.pause(); }
       sideBtn.classList.toggle('on', recOn);
-      sideBtn.textContent = recOn ? '🎤 ON' : '🎤';
+      sideBtn.title = recOn ? 'Micro ON' : 'Micro';
+      sideBtn.setAttribute('aria-label', sideBtn.title);
+      document.getElementById('micLabel').textContent = sideBtn.title;
       if (optBtn) {
         optBtn.classList.toggle('on', recOn);
         optBtn.textContent = recOn ? '✓ Activé' : (micReady ? 'Réactiver' : 'Activer');
@@ -1310,7 +1330,9 @@
       }
       updateStartBtn();
     } catch (e) {
-      sideBtn.textContent = '🎤';
+      sideBtn.title = 'Micro';
+      sideBtn.setAttribute('aria-label', 'Micro');
+      document.getElementById('micLabel').textContent = 'Micro';
       if (optBtn) { optBtn.disabled = false; optBtn.textContent = 'Réessayer'; }
       alert('Micro indisponible : ' + e.message);
     }
@@ -1322,12 +1344,12 @@
   document.getElementById('lang').addEventListener('click', () => {
     unlockSpeech();
     langIdx = (langIdx+1) % LANGS.length;
-    document.getElementById('lang').textContent = LANGS[langIdx][1];
+    document.getElementById('langLabel').textContent = LANGS[langIdx][1];
   });
   document.getElementById('mute').addEventListener('click', () => {
     unlockSpeech();
     muted = !muted;
-    document.getElementById('mute').textContent = muted ? '🔇' : '🔊';
+    setButtonIcon('mute', muted ? 'close' : 'volume', muted ? 'Muted' : 'Sound');
   });
 
   document.getElementById('startBtn').addEventListener('click', () => { if (!levelsReady || !micReady) return; ensureAudio(); unlockSpeech(); showLevelSelect(); });
