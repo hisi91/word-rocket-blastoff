@@ -226,6 +226,12 @@
   const LEVEL_OBJECTS_CACHE_KEY = 'wr_level_objects_v1';
   const LEVELS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
   const LEVELS_FETCH_TIMEOUT = 3500;
+  function objectsForLevel(levelNumber) {
+    const level = Math.max(1, Number(levelNumber) || 1);
+    if (level <= 5) return 5 + (level - 1);
+    if (level <= 20) return 9 + Math.ceil((level - 5) / 2);
+    return 17 + Math.ceil((level - 20) / 5);
+  }
   const DEFAULT_LEVELS = [
     { id: 1, name: 'GROUND', total_objects: 5, folder_name: 'level-1', background_theme: 'meadow', fall_duration: 6, level_objects: [
       { word: 'house', icon_path: 'level-1/house.webp' }, { word: 'tree', icon_path: 'level-1/tree.webp' }, { word: 'leaf', icon_path: 'level-1/leaf.webp' }, { word: 'bird', icon_path: 'level-1/bird.webp' }, { word: 'dog', icon_path: 'level-1/dog.webp' },
@@ -621,7 +627,9 @@
       card.type = 'button';
       card.className = 'level-card' + (unlocked ? '' : ' locked');
       card.disabled = !unlocked;
-      const count = Number(lvl.total_objects) || levelObjectsCache.get(lvl.id)?.length || 0;
+      const targetCount = objectsForLevel(idx + 1);
+      const availableCount = levelObjectsCache.get(lvl.id)?.filter(o => o.icon_path).length;
+      const count = Math.min(targetCount, availableCount || targetCount);
       card.innerHTML =
         `<div>
           <div class="level-num">LEVEL ${idx + 1}</div>
@@ -711,7 +719,7 @@
       state.queue = [...objects]
       .filter(o => o.icon_path) // only include those with generated icons
       .sort(()=>Math.random()-.5)
-      .slice(0, lvl.total_objects);
+      .slice(0, objectsForLevel(state.levelIdx + 1));
       state.totalObjects = state.queue.length;
       state.queue.forEach(o => { if (o.icon_path) loadImg(o.icon_path); });
       return true;
