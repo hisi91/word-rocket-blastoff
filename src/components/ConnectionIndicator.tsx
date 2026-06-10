@@ -104,12 +104,12 @@ export function ConnectionIndicator({ visible }: { visible: boolean }) {
       const startedAt = performance.now();
 
       try {
-        const response = await fetch("/api/ping-ai", {
+        const response = await fetch("/api/ping-groq", {
           method: "GET",
           cache: "no-store",
           signal: controller.signal,
         });
-        if (!response.ok) throw new Error(`ping-ai ${response.status}`);
+        if (!response.ok) throw new Error(`ping-groq ${response.status}`);
 
         const rawLatencyMs = Math.max(0, Math.round(performance.now() - startedAt));
         setConnection((current) => {
@@ -193,7 +193,7 @@ export function ConnectionIndicator({ visible }: { visible: boolean }) {
   const statusDot = STATUS_DOTS[connection.status];
   const statusLabel = STATUS_LABELS[connection.status];
   const compactLabel = useMemo(
-    () => `${statusLabel} Lovable AI, ${formatLatency(connection.latencyMs)}`,
+    () => `${statusLabel} Groq API, ${formatLatency(connection.latencyMs)}`,
     [connection.latencyMs, statusLabel],
   );
 
@@ -227,7 +227,7 @@ export function ConnectionIndicator({ visible }: { visible: boolean }) {
           role="tooltip"
         >
           <span className="block text-xs font-bold uppercase text-muted-foreground">
-            Lovable AI
+            Groq API
           </span>
           <span className="mt-1 block text-base font-bold">{statusLabel}</span>
           <span className="mt-2 block text-xs text-muted-foreground">

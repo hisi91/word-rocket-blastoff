@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiPingAiRouteImport } from './routes/api/ping-ai'
+import { Route as ApiPingGroqRouteImport } from './routes/api/ping-groq'
 import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
 
@@ -19,9 +19,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPingAiRoute = ApiPingAiRouteImport.update({
-  id: '/api/ping-ai',
-  path: '/api/ping-ai',
+const ApiPingGroqRoute = ApiPingGroqRouteImport.update({
+  id: '/api/ping-groq',
+  path: '/api/ping-groq',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiTtsRoute = ApiTtsRouteImport.update({
@@ -37,34 +37,34 @@ const ApiTranscribeRoute = ApiTranscribeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/api/ping-ai': typeof ApiPingAiRoute
+  '/api/ping-groq': typeof ApiPingGroqRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/tts': typeof ApiTtsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/api/ping-ai': typeof ApiPingAiRoute
+  '/api/ping-groq': typeof ApiPingGroqRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/tts': typeof ApiTtsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/api/ping-ai': typeof ApiPingAiRoute
+  '/api/ping-groq': typeof ApiPingGroqRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/tts': typeof ApiTtsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/ping-ai' | '/api/transcribe' | '/api/tts'
+  fullPaths: '/' | '/api/ping-groq' | '/api/transcribe' | '/api/tts'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/ping-ai' | '/api/transcribe' | '/api/tts'
-  id: '__root__' | '/' | '/api/ping-ai' | '/api/transcribe' | '/api/tts'
+  to: '/' | '/api/ping-groq' | '/api/transcribe' | '/api/tts'
+  id: '__root__' | '/' | '/api/ping-groq' | '/api/transcribe' | '/api/tts'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ApiPingAiRoute: typeof ApiPingAiRoute
+  ApiPingGroqRoute: typeof ApiPingGroqRoute
   ApiTranscribeRoute: typeof ApiTranscribeRoute
   ApiTtsRoute: typeof ApiTtsRoute
 }
@@ -85,11 +85,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTtsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/ping-ai': {
-      id: '/api/ping-ai'
-      path: '/api/ping-ai'
-      fullPath: '/api/ping-ai'
-      preLoaderRoute: typeof ApiPingAiRouteImport
+    '/api/ping-groq': {
+      id: '/api/ping-groq'
+      path: '/api/ping-groq'
+      fullPath: '/api/ping-groq'
+      preLoaderRoute: typeof ApiPingGroqRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/transcribe': {
@@ -104,7 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ApiPingAiRoute: ApiPingAiRoute,
+  ApiPingGroqRoute: ApiPingGroqRoute,
   ApiTranscribeRoute: ApiTranscribeRoute,
   ApiTtsRoute: ApiTtsRoute,
 }

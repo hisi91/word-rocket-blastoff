@@ -1,10 +1,10 @@
-# Indicateur de connexion Lovable AI
+# Indicateur de connexion Groq API
 
 Ce document explique le fonctionnement du petit indicateur de connexion ajoute au jeu Word Rocket.
 
 ## Objectif
 
-Le jeu utilise une validation par IA pour certains traitements. Si la connexion avec Lovable AI devient lente ou indisponible, le joueur peut avoir l'impression que le jeu ne repond plus.
+Le jeu utilise Groq API pour certaines fonctionnalites IA, notamment les appels serveur lies a la parole et a la validation. Si la connexion avec Groq API devient lente ou indisponible, le joueur peut avoir l'impression que le jeu ne repond plus.
 
 L'indicateur sert donc a montrer, pendant la partie, si la validation IA est fluide ou lente.
 
@@ -25,8 +25,8 @@ Il est cache sur :
 - `src/components/ConnectionIndicator.tsx`
   Contient toute la logique cote client : ping, calcul de latence, affichage HUD, tooltip et toast.
 
-- `src/routes/api/ping-ai.ts`
-  Route serveur appelee par le client. Elle contacte Lovable AI avec un prompt minimal.
+- `src/routes/api/ping-groq.ts`
+  Route serveur appelee par le client. Elle contacte Groq API avec un prompt minimal.
 
 - `src/routes/index.tsx`
   Monte l'iframe du jeu et affiche l'indicateur au-dessus du canvas quand l'etat du jeu le permet.
@@ -61,30 +61,30 @@ window.parent.postMessage({
 5. Quand `ConnectionIndicator` est visible, il lance un ping toutes les 5 secondes vers :
 
 ```txt
-/api/ping-ai
+/api/ping-groq
 ```
 
-6. La route `/api/ping-ai` contacte Lovable AI cote serveur, avec la cle API gardee cote serveur.
+6. La route `/api/ping-groq` contacte Groq API cote serveur, avec la cle API gardee cote serveur.
 
 7. Le client mesure le temps total entre le debut du fetch et la reponse. Cette valeur est le dernier ping brut.
 
 8. Le composant conserve les 3 derniers pings et affiche une moyenne glissante.
 
-## Pourquoi passer par `/api/ping-ai`
+## Pourquoi passer par `/api/ping-groq`
 
-La cle `LOVABLE_API_KEY` ne doit jamais etre exposee dans le navigateur.
+La cle `GROQ_API_KEY` ne doit jamais etre exposee dans le navigateur.
 
 Le navigateur appelle donc uniquement une route interne :
 
 ```txt
-GET /api/ping-ai
+GET /api/ping-groq
 ```
 
 La route serveur lit ensuite :
 
-- `LOVABLE_API_KEY`
-- `LOVABLE_AI_PING_URL` si defini
-- `LOVABLE_AI_PING_MODEL` si defini
+- `GROQ_API_KEY`
+- `GROQ_PING_URL` si defini
+- `GROQ_PING_MODEL` si defini
 
 Puis elle envoie un prompt minimal :
 
@@ -94,7 +94,7 @@ ok
 
 avec `max_tokens: 1`.
 
-Cela limite le cout tout en testant que l'appel IA repond vraiment.
+Cela limite le cout tout en testant que l'appel Groq repond vraiment.
 
 ## Calcul de la latence
 
@@ -102,7 +102,7 @@ Chaque ping mesure le round-trip cote client :
 
 ```ts
 const startedAt = performance.now();
-await fetch("/api/ping-ai");
+await fetch("/api/ping-groq");
 const rawLatencyMs = performance.now() - startedAt;
 ```
 
@@ -139,7 +139,7 @@ Si le navigateur met l'onglet en arriere-plan, le composant stoppe le polling gr
 
 Il stoppe aussi le polling quand l'indicateur n'est pas visible, donc quand le joueur n'est pas en intro ou en partie.
 
-Cela evite de consommer des credits IA sur les menus ou quand l'utilisateur ne joue pas.
+Cela evite de consommer des credits Groq sur les menus ou quand l'utilisateur ne joue pas.
 
 ## HUD et tooltip
 
@@ -153,7 +153,7 @@ La valeur affichee est la moyenne glissante, pas le dernier ping brut.
 
 Au survol ou au tap, le tooltip affiche :
 
-- le label `Lovable AI`
+- le label `Groq API`
 - le statut lisible : `Bon`, `Degrade`, `Mauvais`, `Hors ligne`
 - la moyenne glissante
 - le dernier ping brut

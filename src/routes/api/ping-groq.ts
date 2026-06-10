@@ -2,7 +2,7 @@ import "@tanstack/react-start";
 import { createFileRoute } from "@tanstack/react-router";
 
 const jsonHeaders = { "content-type": "application/json" };
-const DEFAULT_LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const DEFAULT_GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 function unavailable(message: string, status = 503) {
   return new Response(JSON.stringify({ ok: false, error: message }), {
@@ -11,14 +11,14 @@ function unavailable(message: string, status = 503) {
   });
 }
 
-export const Route = createFileRoute("/api/ping-ai")({
+export const Route = createFileRoute("/api/ping-groq")({
   server: {
     handlers: {
       GET: async () => {
-        const key = process.env.LOVABLE_API_KEY;
-        if (!key) return unavailable("LOVABLE_API_KEY missing");
+        const key = process.env.GROQ_API_KEY;
+        if (!key) return unavailable("GROQ_API_KEY missing");
 
-        const url = process.env.LOVABLE_AI_PING_URL || DEFAULT_LOVABLE_AI_URL;
+        const url = process.env.GROQ_PING_URL || DEFAULT_GROQ_URL;
 
         try {
           const response = await fetch(url, {
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/api/ping-ai")({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: process.env.LOVABLE_AI_PING_MODEL || "gpt-4o-mini",
+              model: process.env.GROQ_PING_MODEL || "llama-3.1-8b-instant",
               messages: [{ role: "user", content: "ok" }],
               max_tokens: 1,
               temperature: 0,
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/api/ping-ai")({
 
           if (!response.ok) {
             const body = await response.text();
-            return unavailable(`Lovable AI ${response.status}: ${body.slice(0, 160)}`);
+            return unavailable(`Groq ${response.status}: ${body.slice(0, 160)}`);
           }
 
           return new Response(JSON.stringify({ ok: true }), {
