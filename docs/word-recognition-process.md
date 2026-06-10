@@ -1,0 +1,206 @@
+# Processus de reconnaissance de mot
+
+Ce document explique comment Word Rocket reconnait un mot prononce par le joueur, depuis le micro jusqu'a la validation de l'objet.
+
+## Vue d'ensemble
+
+Le jeu ne compare pas directement le son du micro avec le mot attendu.
+
+Il suit plutot ce pipeline :
+
+1. Le micro ecoute en continu.
+2. Le VAD detecte le debut et la fin de la parole.
+3. Le jeu extrait uniquement le morceau audio parle.
+4. Le jeu nettoie et normalise legerement l'audio.
+5. Le navigateur envoie l'audio a `/api/transcribe`.
+6. Le backend appelle Groq Whisper.
+7. Groq renvoie un texte.
+8. Le jeu compare ce texte avec le mot attendu.
+9. Si le score est suffisant, l'objet est detruit.
+
+## 1. Ecoute micro
+
+Le micro est active par le joueur depuis l'ecran d'accueil.
+
+Le jeu utilise Silero VAD via `vad-web`. Le VAD ne fait pas de transcription. Son role est seulement de detecter :
+
+- quand le joueur commence a parler
+- quand le joueur a fini de parler
+
+Cela evite d'envoyer de l'audio en continu a Groq.
+
+## 2. Detection de parole avec VAD
+
+Quand le VAD detecte une phrase ou un mot, il attend la fin de la parole puis appelle :
+
+```js
+onSpeechEnd: (audio) => { handleUtterance(audio); }
+```
+
+Le parametre `audio` contient un `Float32Array` avec le morceau audio detecte.
+
+Les reglages actuels rendent le micro plus tolerant aux environnements non silencieux :
+
+```js
+positiveSpeechThreshold: 0.45,
+negativeSpeechThreshold: 0.25,
+minSpeechFrames: 2,
+preSpeechPadFrames: 8,
+redemptionFrames: 12,
+```
+
+Ces valeurs permettent de declencher plus facilement la detection de parole et de garder un peu plus de contexte avant et apres le mot.
+
+## 3. Nettoyage leger de l'audio
+
+Avant d'envoyer l'audio a Groq, le jeu applique un pretraitement leger :
+
+- filtre passe-haut pour reduire les bruits graves
+- normalisation douce du volume
+- limitation du gain pour eviter la saturation
+
+Le but est d'aider Whisper/Groq a recevoir une voix plus lisible sans transformer excessivement le signal.
+
+Le navigateur demande aussi ces options micro quand elles sont disponibles :
+
+```js
+echoCancellation: true,
+noiseSuppression: true,
+autoGainControl: true,
+channelCount: 1,
+```
+
+Ces options dependent du navigateur et du materiel. Elles peuvent donc aider beaucoup sur certains appareils et moins sur d'autres.
+
+## 4. Conversion en WAV
+
+Le VAD fournit l'audio sous forme de `Float32Array`.
+
+Le jeu convertit ce signal en fichier WAV localement :
+
+```js
+const wav = pcmToWav(enhanceSpeechAudio(float32), 16000);
+```
+
+Le fichier WAV est ensuite envoye au backend avec un `FormData`.
+
+## 5. Appel a `/api/transcribe`
+
+Le navigateur appelle :
+
+```txt
+POST /api/transcribe
+```
+
+avec :
+
+- le fichier audio
+- la langue active (`en`, `fr`, `es`)
+- le mot attendu comme prompt si un objet est en cours
+
+Le prompt aide Whisper a mieux comprendre le contexte.
+
+## 6. Transcription par Groq Whisper
+
+La route serveur `/api/transcribe` appelle :
+
+```txt
+https://api.groq.com/openai/v1/audio/transcriptions
+```
+
+avec le modele :
+
+```txt
+whisper-large-v3
+```
+
+La cle `GROQ_API_KEY` reste cote serveur. Elle n'est jamais envoyee au navigateur.
+
+Groq renvoie ensuite le texte reconnu, par exemple :
+
+```txt
+apple
+```
+
+## 7. Comparaison avec le mot attendu
+
+Le jeu ne demande pas une egalite parfaite entre le texte reconnu et le mot attendu.
+
+Il calcule un score de similarite avec :
+
+- une comparaison texte classique
+- une comparaison pseudo-phonetique
+- un bonus si le mot attendu est contenu dans le texte reconnu, ou inversement
+
+Le seuil actuel est :
+
+```js
+const ACCEPT_THRESHOLD = 68;
+```
+
+Si le score est superieur ou egal a `68%`, le jeu considere que le mot est correct.
+
+## 8. Validation ou correction
+
+Si le score est suffisant :
+
+- le jeu valide le mot
+- l'objet est detruit
+- le joueur marque des points
+
+Si le score est trop bas :
+
+- le jeu affiche le mot attendu
+- le jeu prononce le mot pour aider le joueur
+- l'objet continue sa chute
+
+## Temps attendu
+
+Le temps est mesure apres que le joueur a fini de parler.
+
+Dans de bonnes conditions, le temps attendu est environ :
+
+| Etape | Temps typique |
+| --- | --- |
+| Detection fin de parole VAD | 300 a 900 ms |
+| Upload vers le backend | 50 a 300 ms |
+| Transcription Groq Whisper | 500 a 1500 ms |
+| Comparaison locale | quasi instantane |
+
+Donc le temps total normal est souvent autour de :
+
+```txt
+1 a 2.5 secondes
+```
+
+En reseau lent ou si Groq repond plus lentement, cela peut monter a :
+
+```txt
+3 a 5 secondes
+```
+
+Si la reconnaissance depasse regulierement 5 secondes, il faut investiguer.
+
+## Causes possibles de lenteur
+
+Les causes les plus probables sont :
+
+- le VAD capture un audio trop long
+- le bruit de fond empeche le VAD de detecter clairement la fin de parole
+- l'appel Groq est lent
+- le reseau est lent
+- le backend met du temps a recevoir ou renvoyer la reponse
+
+L'indicateur Groq API aide a diagnostiquer la partie reseau/API. S'il devient jaune, rouge ou gris, la reconnaissance peut etre lente meme si le micro fonctionne correctement.
+
+## Limite importante
+
+Le jeu reconnait le texte transcrit par Groq, pas directement la prononciation acoustique.
+
+Cela veut dire que :
+
+- si Groq transcrit le bon mot, le jeu valide souvent
+- si Groq entend un autre mot, le score peut echouer
+- si l'environnement est bruyant, Groq peut recevoir un signal moins clair
+
+Le pretraitement audio et les seuils VAD ameliorent la situation, mais ils ne remplacent pas totalement un micro correct et une distance raisonnable entre le joueur et l'appareil.
