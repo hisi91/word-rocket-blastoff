@@ -193,6 +193,119 @@ Les causes les plus probables sont :
 
 L'indicateur Groq API aide a diagnostiquer la partie reseau/API. S'il devient jaune, rouge ou gris, la reconnaissance peut etre lente meme si le micro fonctionne correctement.
 
+## Ameliorations possibles pour reduire la latence
+
+La latence vient du chemin complet :
+
+```txt
+voix -> VAD -> WAV -> upload -> backend -> Groq Whisper -> retour texte -> matching
+```
+
+Il faut donc optimiser a la fois l'audio envoye, l'appel API et la perception utilisateur.
+
+### 1. Envoyer moins d'audio a Groq
+
+C'est souvent le meilleur gain.
+
+Si le VAD garde trop de silence avant ou apres le mot, Groq recoit un fichier plus long. Plus le fichier est long, plus l'upload et la transcription peuvent prendre du temps.
+
+Actions possibles :
+
+- couper le silence au debut et a la fin avant `pcmToWav`
+- limiter la duree maximale d'un utterance
+- ignorer les audios trop faibles ou trop longs
+- ajuster `redemptionFrames` si la fin de parole est detectee trop tard
+
+Gain attendu : fort, surtout si le VAD capture parfois plusieurs secondes au lieu d'un mot court.
+
+### 2. Afficher un etat "analyse"
+
+Meme si la latence reelle reste autour de 1 a 2 secondes, l'experience peut sembler lente si rien ne se passe apres la parole.
+
+Actions possibles :
+
+- afficher `Analyse...` juste apres la fin de parole
+- faire pulser l'objet courant pendant la transcription
+- afficher un petit loader pres du mot reconnu
+- indiquer clairement que le jeu a entendu quelque chose
+
+Cela ne reduit pas la latence technique, mais reduit fortement la latence percue.
+
+### 3. Tester un modele Whisper plus rapide
+
+Le modele actuel est :
+
+```txt
+whisper-large-v3
+```
+
+Il est precis, mais il peut etre plus lent qu'un modele optimise pour la vitesse.
+
+Action possible :
+
+- tester `whisper-large-v3-turbo` si disponible sur Groq dans le projet
+
+Gain attendu : fort si le modele turbo est disponible et garde une precision suffisante pour des mots courts.
+
+### 4. Compresser l'audio avant upload
+
+Aujourd'hui, le jeu envoie un WAV brut. C'est simple et fiable, mais plus lourd qu'un format compresse.
+
+Option possible :
+
+- encoder en WebM/Opus avec `MediaRecorder`
+
+Avantage :
+
+- fichier plus petit
+- upload plus rapide, surtout sur mobile ou reseau moyen
+
+Inconvenient :
+
+- implementation plus complexe
+- il faut verifier que la route `/api/transcribe` et Groq acceptent bien le format envoye dans tous les navigateurs cibles
+
+Gain attendu : moyen a fort selon le reseau.
+
+### 5. Rechauffer Groq au debut du niveau
+
+Le premier appel a une API peut parfois etre plus lent que les suivants.
+
+Action possible :
+
+- envoyer un mini ping ou une mini transcription au debut du niveau
+- utiliser ce warmup sans bloquer le joueur
+
+Gain attendu : utile surtout pour le premier mot d'un niveau.
+
+### 6. Adapter le gameplay pendant la transcription
+
+Si un objet continue de tomber normalement pendant que le jeu attend Groq, le joueur peut ressentir une injustice.
+
+Actions possibles :
+
+- ralentir legerement la chute pendant `busy`
+- figer l'objet courant pendant quelques centaines de millisecondes apres la parole
+- donner un petit bonus de temps si une transcription est en cours
+
+Cela ne rend pas Groq plus rapide, mais rend le gameplay plus juste.
+
+### Priorite recommandee
+
+Pour Word Rocket, le meilleur ordre d'implementation serait :
+
+1. Couper le silence avant et apres l'audio envoye a Groq.
+2. Ajouter un feedback visuel `Analyse...` apres la parole.
+3. Tester `whisper-large-v3-turbo`.
+4. Ralentir ou figer legerement l'objet pendant la transcription.
+5. Passer a WebM/Opus seulement si l'upload reste trop lent.
+
+Le meilleur compromis rapide est :
+
+```txt
+trim silence + modele plus rapide + feedback visuel
+```
+
 ## Limite importante
 
 Le jeu reconnait le texte transcrit par Groq, pas directement la prononciation acoustique.
