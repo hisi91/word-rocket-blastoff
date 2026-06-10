@@ -686,6 +686,7 @@
     document.getElementById('levelSelect').classList.remove('hidden');
     document.getElementById('topControls').style.display = 'none';
     renderLevelSelect();
+    publishGameState();
   }
 
   function renderLevelSelect() {
@@ -743,6 +744,7 @@
     runLevelIntro(lvl);
     hideChoices();
     updateHUD();
+    publishGameState();
   }
 
   function runLevelIntro(lvl) {
@@ -763,6 +765,7 @@
           SFX.start();
           state.screen = 'PLAYING';
           state.running = true;
+          publishGameState();
           setTimeout(() => {
             state.takeoff.active = false;
             nextObject();
@@ -1018,6 +1021,15 @@
     document.getElementById('bannerSub').textContent = sub || '';
     b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
   }
+  function publishGameState() {
+    try {
+      window.parent.postMessage({
+        type: 'word-rocket-state',
+        screen: state.screen,
+        paused: state.paused,
+      }, '*');
+    } catch(_) {}
+  }
   function setButtonIcon(id, icon, label) {
     const btn = document.getElementById(id);
     const img = btn?.querySelector('img.ui-icon');
@@ -1149,6 +1161,7 @@
   function setPaused(p) {
     state.paused = !!p;
     setButtonIcon('pauseBtn', state.paused ? 'play' : 'pause', state.paused ? 'Resume' : 'Pause');
+    publishGameState();
   }
 
   function stopEverythingForHome() {
@@ -1174,6 +1187,7 @@
     document.getElementById('end').classList.add('hidden');
     document.getElementById('levelSelect').classList.add('hidden');
     document.getElementById('start').classList.remove('hidden');
+    publishGameState();
   }
 
   function drawParticles() {
