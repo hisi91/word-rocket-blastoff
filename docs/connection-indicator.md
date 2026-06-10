@@ -126,10 +126,10 @@ Le statut est deduit de la moyenne glissante :
 
 | Statut | Condition | Affichage |
 | --- | --- | --- |
-| `good` | moyenne < 1000 ms | 🟢 |
-| `degraded` | moyenne < 3000 ms | 🟡 |
-| `poor` | moyenne >= 3000 ms | 🔴 |
-| `offline` | erreur fetch, timeout ou route indisponible | ⚫ |
+| `good` | moyenne < 1000 ms | `latency-good.webp` |
+| `degraded` | moyenne < 3000 ms | `latency-medium.webp` |
+| `poor` | moyenne >= 3000 ms | `latency-bad.png` |
+| `offline` | erreur fetch, timeout ou route indisponible | `latency-off.webp` |
 
 ## Timeout et economie de credits
 
@@ -143,23 +143,17 @@ Cela evite de consommer des credits Groq sur les menus ou quand l'utilisateur ne
 
 ## HUD et tooltip
 
-La vue compacte affiche :
+La vue compacte affiche uniquement une icone de qualite, sans chiffre en millisecondes.
 
-```txt
-🟢 612ms
-```
-
-La valeur affichee est la moyenne glissante, pas le dernier ping brut.
+L'indicateur est place sous les 3 boutons en haut a gauche du jeu.
 
 Au survol ou au tap, le tooltip affiche :
 
 - le label `Groq API`
 - le statut lisible : `Bon`, `Degrade`, `Mauvais`, `Hors ligne`
-- la moyenne glissante
-- le dernier ping brut
-- une mini sparkline des 3 derniers pings
+- une courte description de ce qui est mesure
 
-La pastille pulse pendant qu'un ping est en cours.
+L'icone pulse pendant qu'un ping est en cours.
 
 ## Toast de connexion degradee
 

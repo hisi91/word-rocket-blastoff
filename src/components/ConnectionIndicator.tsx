@@ -14,11 +14,11 @@ interface ConnectionState {
 const PING_INTERVAL_MS = 5000;
 const PING_TIMEOUT_MS = 4500;
 
-const STATUS_DOTS: Record<ConnectionStatus, string> = {
-  good: "🟢",
-  degraded: "🟡",
-  poor: "🔴",
-  offline: "⚫",
+const STATUS_ICONS: Record<ConnectionStatus, string> = {
+  good: "/assets/latency-good.webp",
+  degraded: "/assets/latency-medium.webp",
+  poor: "/assets/latency-bad.png",
+  offline: "/assets/latency-off.webp",
 };
 
 const STATUS_LABELS: Record<ConnectionStatus, string> = {
@@ -27,10 +27,6 @@ const STATUS_LABELS: Record<ConnectionStatus, string> = {
   poor: "Mauvais",
   offline: "Hors ligne",
 };
-
-function formatLatency(latencyMs: number | null) {
-  return latencyMs === null ? "..." : `${latencyMs}ms`;
-}
 
 function getStatus(latencyMs: number | null): ConnectionStatus {
   if (latencyMs === null) return "offline";
@@ -42,26 +38,6 @@ function getStatus(latencyMs: number | null): ConnectionStatus {
 function average(values: number[]) {
   if (values.length === 0) return null;
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
-}
-
-function Sparkline({ values }: { values: number[] }) {
-  if (values.length === 0) {
-    return <div className="h-5 rounded-sm bg-muted" aria-hidden="true" />;
-  }
-
-  const max = Math.max(...values, 1);
-
-  return (
-    <div className="flex h-5 items-end gap-1" aria-hidden="true">
-      {values.map((value, index) => (
-        <span
-          key={`${value}-${index}`}
-          className="w-2 rounded-sm bg-primary"
-          style={{ height: `${Math.max(20, Math.round((value / max) * 100))}%` }}
-        />
-      ))}
-    </div>
-  );
 }
 
 export function ConnectionIndicator({ visible }: { visible: boolean }) {
@@ -190,37 +166,37 @@ export function ConnectionIndicator({ visible }: { visible: boolean }) {
     }
   }, [connection.lastChecked, connection.status, visible]);
 
-  const statusDot = STATUS_DOTS[connection.status];
+  const statusIcon = STATUS_ICONS[connection.status];
   const statusLabel = STATUS_LABELS[connection.status];
   const compactLabel = useMemo(
-    () => `${statusLabel} Groq API, ${formatLatency(connection.latencyMs)}`,
-    [connection.latencyMs, statusLabel],
+    () => `${statusLabel} Groq API`,
+    [statusLabel],
   );
 
   if (!visible) return null;
 
   return (
-    <div
-      className="absolute right-3 top-16 z-50 text-sm text-card-foreground sm:right-4 sm:top-4"
-      style={{ fontFamily: '"Fredoka One", system-ui, sans-serif' }}
-    >
+    <div className="absolute left-2 top-[214px] z-50 text-sm text-card-foreground">
       <button
         type="button"
         aria-label={compactLabel}
         aria-expanded={tooltipOpen}
         onClick={() => setTooltipOpen((open) => !open)}
         onBlur={() => setTooltipOpen(false)}
-        className="group relative flex items-center gap-2 rounded-md border border-border bg-card/85 px-3 py-2 shadow-lg backdrop-blur transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="group relative flex h-12 w-12 items-center justify-center rounded-md border-0 bg-transparent p-0 shadow-none transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <span className={isPinging ? "animate-pulse" : ""} aria-hidden="true">
-          {statusDot}
-        </span>
-        <span className="min-w-12 text-left font-bold tabular-nums">
-          {formatLatency(connection.latencyMs)}
-        </span>
+        <img
+          src={statusIcon}
+          alt=""
+          aria-hidden="true"
+          className={[
+            "h-12 w-12 rounded-md object-contain drop-shadow-lg",
+            isPinging ? "animate-pulse" : "",
+          ].join(" ")}
+        />
         <span
           className={[
-            "pointer-events-none absolute right-0 top-full mt-2 w-64 rounded-md border border-border bg-popover/95 p-3 text-left text-popover-foreground opacity-0 shadow-lg backdrop-blur transition-opacity",
+            "pointer-events-none absolute left-full top-0 ml-2 w-56 rounded-md border border-border bg-popover/95 p-3 text-left text-popover-foreground opacity-0 shadow-lg backdrop-blur transition-opacity",
             "group-hover:pointer-events-auto group-hover:opacity-100",
             tooltipOpen ? "pointer-events-auto opacity-100" : "",
           ].join(" ")}
@@ -231,19 +207,7 @@ export function ConnectionIndicator({ visible }: { visible: boolean }) {
           </span>
           <span className="mt-1 block text-base font-bold">{statusLabel}</span>
           <span className="mt-2 block text-xs text-muted-foreground">
-            Moyenne:{" "}
-            <span className="font-bold text-popover-foreground">
-              {formatLatency(connection.latencyMs)}
-            </span>
-          </span>
-          <span className="mt-1 block text-xs text-muted-foreground">
-            Dernier ping:{" "}
-            <span className="font-bold text-popover-foreground">
-              {formatLatency(connection.rawLatencyMs)}
-            </span>
-          </span>
-          <span className="mt-3 block">
-            <Sparkline values={connection.pingHistory} />
+            Qualité de connexion pour la validation vocale.
           </span>
         </span>
       </button>
