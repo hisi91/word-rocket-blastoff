@@ -1255,7 +1255,7 @@
   // ===== Speech (Whisper via /api/transcribe + Silero VAD + fuzzy IPA) =====
   const LANGS = [['en','🇬🇧','en'],['fr','🇫🇷','fr'],['es','🇪🇸','es']];
   let langIdx = 0;
-  let micVad = null, recOn = false, busy = false;
+  let micVad = null, micStream = null, recOn = false, busy = false;
   let speakOnAppear = false;
   let choicesEnabled = false;
   let micReady = false, levelsReady = false;
@@ -1315,9 +1315,31 @@
     const contains = a.includes(b) || b.includes(a) ? 0.15 : 0;
     return Math.round(Math.min(1, Math.max(raw, phr) + contains) * 100);
   }
-  const ACCEPT_THRESHOLD = 72; // % similarity needed to validate
+  const ACCEPT_THRESHOLD = 68; // % similarity needed to validate
 
   // --- Recorder helper (VAD passes Float32 PCM 16kHz; we encode to WAV) ---
+  function enhanceSpeechAudio(float32) {
+    if (!float32 || !float32.length) return float32;
+    const out = new Float32Array(float32.length);
+    let prevInput = 0, prevOutput = 0, sumSquares = 0, peak = 0;
+    const hpAlpha = 0.98;
+    for (let i = 0; i < float32.length; i++) {
+      const input = float32[i] || 0;
+      const filtered = hpAlpha * (prevOutput + input - prevInput);
+      prevInput = input;
+      prevOutput = filtered;
+      out[i] = filtered;
+      sumSquares += filtered * filtered;
+      peak = Math.max(peak, Math.abs(filtered));
+    }
+    const rms = Math.sqrt(sumSquares / out.length);
+    if (rms < 0.004 || peak <= 0) return out;
+    const targetRms = 0.12;
+    const gain = Math.min(4, targetRms / rms, 0.95 / peak);
+    for (let i = 0; i < out.length; i++) out[i] *= gain;
+    return out;
+  }
+
   function pcmToWav(float32, sr) {
     const len = float32.length;
     const buf = new ArrayBuffer(44 + len * 2);
@@ -1355,7 +1377,7 @@
     if (busy || !state.running) return;
     busy = true;
     try {
-      const wav = pcmToWav(float32, 16000);
+      const wav = pcmToWav(enhanceSpeechAudio(float32), 16000);
       const heard = (await transcribe(wav)).trim();
       if (!heard) return;
       if (state.awaitingStart) {
@@ -1395,16 +1417,30 @@
         document.head.appendChild(s1);
       });
     }
-    micVad = await window.vad.MicVAD.new({
-      positiveSpeechThreshold: 0.6,
-      negativeSpeechThreshold: 0.35,
-      minSpeechFrames: 3,
-      preSpeechPadFrames: 4,
-      redemptionFrames: 8,
+    if (!micStream && navigator.mediaDevices?.getUserMedia) {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            channelCount: 1,
+          },
+        });
+      } catch (_) {}
+    }
+    const vadOptions = {
+      positiveSpeechThreshold: 0.45,
+      negativeSpeechThreshold: 0.25,
+      minSpeechFrames: 2,
+      preSpeechPadFrames: 8,
+      redemptionFrames: 12,
       baseAssetPath: 'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.24/dist/',
       onnxWASMBasePath: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/',
       onSpeechEnd: (audio) => { handleUtterance(audio); },
-    });
+    };
+    if (micStream) vadOptions.stream = micStream;
+    micVad = await window.vad.MicVAD.new(vadOptions);
     return micVad;
   }
 
