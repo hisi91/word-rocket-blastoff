@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 <title>WORD ROCKET</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: #000; color: #fff;
@@ -117,20 +120,44 @@
   .start-prompt.show { opacity:1; animation: pulseStart 1.6s ease-in-out infinite; }
   @keyframes pulseStart { 0%,100% { transform:translate(-50%,-50%) scale(1); }
     50% { transform:translate(-50%,-50%) scale(1.08); } }
-  .level-grid { width:min(820px,92vw); max-height:58vh; overflow-y:auto; display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; padding:4px; }
-  .level-card { min-height:132px; display:flex; flex-direction:column; align-items:flex-start;
-    justify-content:space-between; gap:10px; padding:14px; border-radius:8px; text-align:left;
-    background:rgba(0,20,30,.78); border:2px solid #0ff8; color:#eaffff;
-    box-shadow:0 0 14px #0ff2; }
-  .level-card:hover { background:rgba(0,60,80,.85); transform:translateY(-2px); }
-  .level-card.locked { opacity:.48; border-color:#789; color:#abc; cursor:not-allowed; }
-  .level-card.locked:hover { transform:none; background:rgba(0,20,30,.78); }
-  .level-num { color:#7cf; font-size:13px; letter-spacing:2px; }
-  .level-name { color:#fff; font-weight:bold; font-size:18px; line-height:1.2; }
-  .level-meta { color:#9ad; font-size:12px; line-height:1.4; }
-  .level-state { color:#0f8; font-size:12px; letter-spacing:1px; text-transform:uppercase; }
-  .level-card.locked .level-state { color:#fc6; }
+  #levelSelect { justify-content:flex-start; gap:16px; overflow-y:auto;
+    background:
+      radial-gradient(ellipse at 15% 22%, rgba(255,255,255,.72) 0 7%, transparent 7.5%),
+      radial-gradient(ellipse at 78% 16%, rgba(255,255,255,.62) 0 8%, transparent 8.5%),
+      radial-gradient(ellipse at 48% 55%, rgba(255,255,255,.45) 0 10%, transparent 10.5%),
+      linear-gradient(#75d9f3 0%, #b7eff7 48%, #eaf8c0 80%, #74d64b 100%); }
+  #levelSelect .title { margin-top:8px; color:#48d7ff; background:none; -webkit-text-fill-color:unset;
+    text-shadow: 0 5px 0 rgba(53,80,120,.35), 0 0 12px rgba(255,255,255,.55);
+    font-family:'Luckiest Guy','Courier New',monospace; letter-spacing:8px; animation:none; }
+  #levelSelect .subtitle { color:#5c5c5c; text-shadow:0 1px 0 #fff8; }
+  .level-grid { width:min(920px,94vw); max-height:68vh; overflow-y:auto; display:grid;
+    grid-template-columns:repeat(4,minmax(112px,1fr)); gap:18px 22px; padding:12px 12px 28px; }
+  .level-card { position:relative; min-height:142px; display:flex; align-items:flex-end;
+    justify-content:center; padding:0; border:0; background:transparent; box-shadow:none;
+    color:#3d1a00; cursor:pointer; transition:transform .14s ease; overflow:visible; }
+  .level-card.unlocked:hover { transform:scale(1.05); }
+  .level-card.locked { cursor:pointer; opacity:.92; }
+  .level-card.shake { animation: levelShake .34s ease; }
+  @keyframes levelShake {
+    0%,100% { transform:translateX(0); }
+    20% { transform:translateX(-7px) rotate(-2deg); }
+    40% { transform:translateX(7px) rotate(2deg); }
+    60% { transform:translateX(-5px) rotate(-1deg); }
+    80% { transform:translateX(5px) rotate(1deg); }
+  }
+  .level-frame { position:relative; width:min(132px,100%); aspect-ratio:1; display:grid;
+    place-items:center; background:url('assets/cadre.png') center/contain no-repeat; }
+  .level-number { font-family:'Luckiest Guy','Courier New',monospace; font-size:clamp(38px,5.2vw,56px);
+    color:#3d1a00; line-height:1; -webkit-text-stroke:2px #f6cf51;
+    text-shadow:0 3px 0 #f6cf51, 0 5px 0 rgba(83,34,0,.18); transform:translateY(5px); }
+  .level-lock { width:54%; height:54%; object-fit:contain; filter:drop-shadow(0 4px 0 rgba(83,34,0,.22)); }
+  .level-stars { position:absolute; top:-20px; left:50%; transform:translateX(-50%);
+    display:flex; justify-content:center; gap:2px; min-height:36px; z-index:2; pointer-events:none; }
+  .level-star { width:34px; height:34px; object-fit:contain; filter:drop-shadow(0 3px 0 rgba(130,76,0,.28)); }
+  @media (max-width: 640px) {
+    .level-grid { grid-template-columns:repeat(2,minmax(112px,1fr)); gap:18px 20px; max-height:68vh; }
+    #levelSelect .title { letter-spacing:4px; }
+  }
   .end-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
 </style>
 </head>
@@ -228,6 +255,7 @@
   
   const LEVELS_CACHE_KEY = 'wr_levels_v8';
   const LEVEL_OBJECTS_CACHE_KEY = 'wr_level_objects_v1';
+  const PROGRESS_KEY = 'wr_level_progress_v1';
   const LEVELS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
   const LEVELS_FETCH_TIMEOUT = 3500;
   function objectsForLevel(levelNumber) {
@@ -580,6 +608,7 @@
   const levelObjectsCache = new Map();
   let rocketImg = null;
   let flameImg = null;
+  let levelProgress = loadProgress();
   const state = {
     screen: 'START', running: false, paused: false, awaitingStart: false, levelIdx: 0, score: 0, lives: 3, combo: 0,
     queue: [], current: null, missed: [], correct: 0, attempted: 0, totalObjects: 0,
@@ -587,6 +616,38 @@
     takeoff: { active: false, t0: 0, duration: 2600 },
   };
   const particles = [];
+
+  function loadProgress() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
+      return {
+        unlocked: Math.max(1, Number(saved.unlocked) || 1),
+        stars: saved.stars && typeof saved.stars === 'object' ? saved.stars : {},
+      };
+    } catch {
+      return { unlocked: 1, stars: {} };
+    }
+  }
+
+  function saveProgress() {
+    try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(levelProgress)); } catch {}
+  }
+
+  function starsForMistakes(mistakes) {
+    if (mistakes <= 0) return 3;
+    if (mistakes === 1) return 2;
+    if (mistakes === 2) return 1;
+    return 0;
+  }
+
+  function recordLevelWin() {
+    const levelNumber = state.levelIdx + 1;
+    const earnedStars = starsForMistakes(state.missed.length);
+    const currentStars = Number(levelProgress.stars[levelNumber]) || 0;
+    levelProgress.stars[levelNumber] = Math.max(currentStars, earnedStars);
+    levelProgress.unlocked = Math.max(levelProgress.unlocked, Math.min(LEVELS.length, levelNumber + 1));
+    saveProgress();
+  }
 
   function newFalling() {
     if (state.queue.length === 0) return null;
@@ -626,31 +687,36 @@
     const grid = document.getElementById('levelGrid');
     grid.innerHTML = '';
     LEVELS.forEach((lvl, idx) => {
-      const unlocked = true;
+      const levelNumber = idx + 1;
+      const unlocked = levelNumber <= levelProgress.unlocked;
+      const stars = Number(levelProgress.stars[levelNumber]) || 0;
       const card = document.createElement('button');
       card.type = 'button';
-      card.className = 'level-card' + (unlocked ? '' : ' locked');
-      card.disabled = !unlocked;
-      const targetCount = objectsForLevel(idx + 1);
-      const availableCount = levelObjectsCache.get(lvl.id)?.filter(o => o.icon_path).length;
-      const count = Math.min(targetCount, availableCount || targetCount);
+      card.className = 'level-card ' + (unlocked ? 'unlocked' : 'locked');
+      card.setAttribute('aria-label', unlocked ? `Level ${levelNumber}` : `Level ${levelNumber} locked`);
+      const starIcons = Array.from({ length: stars }, () => '<img class="level-star" src="assets/star.png" alt="">').join('');
       card.innerHTML =
-        `<div>
-          <div class="level-num">LEVEL ${idx + 1}</div>
-          <div class="level-name">${escapeHtml(lvl.name || 'LEVEL')}</div>
-        </div>
-        <div>
-          <div class="level-meta">${count} mots</div>
-          <div class="level-state">${unlocked ? 'Unlocked' : 'Locked'}</div>
+        `<div class="level-stars" aria-hidden="true">${starIcons}</div>
+        <div class="level-frame">
+          ${unlocked
+            ? `<span class="level-number">${levelNumber}</span>`
+            : '<img class="level-lock" src="assets/cadnat.png" alt="">'}
         </div>`;
-      card.addEventListener('click', () => startLevel(idx));
+      card.addEventListener('click', () => {
+        if (unlocked) {
+          startLevel(idx);
+          return;
+        }
+        card.classList.remove('shake');
+        void card.offsetWidth;
+        card.classList.add('shake');
+      });
       grid.appendChild(card);
     });
   }
 
-  const escapeHtml = s => String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-
   async function startLevel(levelIdx) {
+    if (levelIdx + 1 > levelProgress.unlocked) return;
     state.screen = 'LEVEL_INTRO';
     state.levelIdx = Math.max(0, Math.min(levelIdx, LEVELS.length - 1));
     state.score = 0; state.lives = 3; state.combo = 0;
@@ -898,6 +964,7 @@
     state.screen = 'LEVEL_END';
     state.running = false;
     setPaused(false);
+    if (won) recordLevelWin();
     document.getElementById('topControls').style.display = 'none';
     hideChoices();
     document.getElementById('end').classList.remove('hidden');
