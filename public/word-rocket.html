@@ -120,13 +120,14 @@
   .start-prompt.show { opacity:1; animation: pulseStart 1.6s ease-in-out infinite; }
   @keyframes pulseStart { 0%,100% { transform:translate(-50%,-50%) scale(1); }
     50% { transform:translate(-50%,-50%) scale(1.08); } }
-  #levelSelect { justify-content:flex-start; gap:16px; overflow-y:auto;
+  #levelSelect { justify-content:flex-start; gap:12px; overflow-y:auto;
     background:
       radial-gradient(ellipse at 15% 22%, rgba(255,255,255,.72) 0 7%, transparent 7.5%),
       radial-gradient(ellipse at 78% 16%, rgba(255,255,255,.62) 0 8%, transparent 8.5%),
       radial-gradient(ellipse at 48% 55%, rgba(255,255,255,.45) 0 10%, transparent 10.5%),
       linear-gradient(#75d9f3 0%, #b7eff7 48%, #eaf8c0 80%, #74d64b 100%); }
-  #levelSelect .title { margin-top:8px; background:none; color:#ef2ea7;
+  #levelSelect .title { margin-top:8px; max-width:94vw; font-size:clamp(42px,8vw,72px);
+    background:none; color:#ef2ea7;
     -webkit-text-fill-color:#ef2ea7; -webkit-text-stroke:4px #fff5a8;
     text-shadow:0 7px 0 rgba(9,115,132,.45), 0 0 10px rgba(255,255,255,.5);
     font-family:'Luckiest Guy','Courier New',monospace; letter-spacing:8px; animation:none; }
@@ -158,8 +159,10 @@
   .level-star { width:58px; height:58px; object-fit:contain; margin:0 -6px;
     filter:drop-shadow(0 3px 0 rgba(130,76,0,.28)); }
   @media (max-width: 640px) {
+    #levelSelect { gap:8px; padding:14px 12px 18px; }
     .level-grid { width:min(308px,94vw); grid-template-columns:repeat(2,126px); gap:14px 28px; max-height:72vh; }
-    #levelSelect .title { letter-spacing:4px; }
+    #levelSelect .title { font-size:clamp(38px,13vw,58px); letter-spacing:2px; -webkit-text-stroke:3px #fff5a8;
+      text-shadow:0 5px 0 rgba(9,115,132,.45), 0 0 8px rgba(255,255,255,.5); }
   }
   .end-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
 </style>
@@ -232,8 +235,7 @@
   </div>
 
   <div class="overlay hidden" id="levelSelect">
-    <div class="title" style="font-size: clamp(32px,7vw,60px)">LEVEL SELECT</div>
-    <div class="subtitle">Choisis un niveau pour une partie courte et indépendante.</div>
+    <div class="title">LEVEL SELECT</div>
     <div id="levelGrid" class="level-grid"></div>
   </div>
 
