@@ -11,7 +11,7 @@ Il suit plutot ce pipeline :
 1. Le micro ecoute en continu.
 2. Le VAD detecte le debut et la fin de la parole.
 3. Le jeu extrait uniquement le morceau audio parle.
-4. Le jeu nettoie et normalise legerement l'audio.
+4. Le jeu coupe les silences, nettoie et normalise legerement l'audio.
 5. Le navigateur envoie l'audio a `/api/transcribe`.
 6. Le backend appelle Groq Whisper.
 7. Groq renvoie un texte.
@@ -58,6 +58,7 @@ Avant d'envoyer l'audio a Groq, le jeu applique un pretraitement leger :
 - filtre passe-haut pour reduire les bruits graves
 - normalisation douce du volume
 - limitation du gain pour eviter la saturation
+- suppression des silences au debut et a la fin du signal
 
 Le but est d'aider Whisper/Groq a recevoir une voix plus lisible sans transformer excessivement le signal.
 
@@ -72,17 +73,25 @@ channelCount: 1,
 
 Ces options dependent du navigateur et du materiel. Elles peuvent donc aider beaucoup sur certains appareils et moins sur d'autres.
 
-## 4. Conversion en WAV
+## 4. Compression audio
 
 Le VAD fournit l'audio sous forme de `Float32Array`.
 
-Le jeu convertit ce signal en fichier WAV localement :
+Quand le navigateur le permet, le jeu enregistre en parallele la parole avec `MediaRecorder` et envoie un fichier WebM/Opus compresse :
 
-```js
-const wav = pcmToWav(enhanceSpeechAudio(float32), 16000);
+```txt
+speech.webm
 ```
 
-Le fichier WAV est ensuite envoye au backend avec un `FormData`.
+Ce format est plus petit qu'un WAV brut, donc plus rapide a uploader.
+
+Si WebM/Opus n'est pas disponible, le jeu utilise un fallback WAV local :
+
+```js
+const wav = pcmToWav(enhanceSpeechAudio(trimSpeechAudio(float32, 16000)), 16000);
+```
+
+Le fichier audio est ensuite envoye au backend avec un `FormData`.
 
 ## 5. Appel a `/api/transcribe`
 
@@ -108,7 +117,13 @@ La route serveur `/api/transcribe` appelle :
 https://api.groq.com/openai/v1/audio/transcriptions
 ```
 
-avec le modele :
+avec le modele prioritaire :
+
+```txt
+whisper-large-v3-turbo
+```
+
+Si ce modele n'est pas disponible ou renvoie une erreur, la route retombe automatiquement sur :
 
 ```txt
 whisper-large-v3
@@ -163,7 +178,7 @@ Dans de bonnes conditions, le temps attendu est environ :
 | Etape | Temps typique |
 | --- | --- |
 | Detection fin de parole VAD | 300 a 900 ms |
-| Upload vers le backend | 50 a 300 ms |
+| Upload vers le backend | 30 a 250 ms |
 | Transcription Groq Whisper | 500 a 1500 ms |
 | Comparaison locale | quasi instantane |
 
@@ -216,6 +231,8 @@ Actions possibles :
 - ignorer les audios trop faibles ou trop longs
 - ajuster `redemptionFrames` si la fin de parole est detectee trop tard
 
+Etat actuel : une coupe de silence existe deja dans le fallback WAV. La version WebM/Opus s'appuie surtout sur les bornes du VAD.
+
 Gain attendu : fort, surtout si le VAD capture parfois plusieurs secondes au lieu d'un mot court.
 
 ### 2. Afficher un etat "analyse"
@@ -228,6 +245,8 @@ Actions possibles :
 - faire pulser l'objet courant pendant la transcription
 - afficher un petit loader pres du mot reconnu
 - indiquer clairement que le jeu a entendu quelque chose
+
+Etat actuel : le jeu affiche deja `Analyse...` pendant l'appel a Groq.
 
 Cela ne reduit pas la latence technique, mais reduit fortement la latence percue.
 
@@ -243,17 +262,18 @@ Il est precis, mais il peut etre plus lent qu'un modele optimise pour la vitesse
 
 Action possible :
 
-- tester `whisper-large-v3-turbo` si disponible sur Groq dans le projet
+Etat actuel : la route essaie `whisper-large-v3-turbo`, puis retombe sur `whisper-large-v3` si necessaire.
 
 Gain attendu : fort si le modele turbo est disponible et garde une precision suffisante pour des mots courts.
 
 ### 4. Compresser l'audio avant upload
 
-Aujourd'hui, le jeu envoie un WAV brut. C'est simple et fiable, mais plus lourd qu'un format compresse.
+Le fallback WAV reste simple et fiable, mais plus lourd qu'un format compresse.
 
-Option possible :
+Etat actuel :
 
-- encoder en WebM/Opus avec `MediaRecorder`
+- le jeu encode en WebM/Opus avec `MediaRecorder` quand le navigateur le permet
+- sinon il retombe sur WAV
 
 Avantage :
 

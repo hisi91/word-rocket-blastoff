@@ -1256,6 +1256,7 @@
   const LANGS = [['en','🇬🇧','en'],['fr','🇫🇷','fr'],['es','🇪🇸','es']];
   let langIdx = 0;
   let micVad = null, micStream = null, recOn = false, busy = false;
+  let speechRecorder = null, speechChunks = [], speechBlobPromise = null;
   let speakOnAppear = false;
   let choicesEnabled = false;
   let micReady = false, levelsReady = false;
@@ -1317,7 +1318,36 @@
   }
   const ACCEPT_THRESHOLD = 68; // % similarity needed to validate
 
-  // --- Recorder helper (VAD passes Float32 PCM 16kHz; we encode to WAV) ---
+  // --- Recorder helper (VAD passes Float32 PCM 16kHz; prefer compact WebM/Opus, fallback to WAV) ---
+  function trimSpeechAudio(float32, sr) {
+    if (!float32 || !float32.length) return float32;
+    const frame = Math.max(1, Math.floor(sr * 0.01));
+    const pad = Math.floor(sr * 0.12);
+    let maxRms = 0;
+    const rmsFrames = [];
+    for (let i = 0; i < float32.length; i += frame) {
+      let sum = 0, count = 0;
+      for (let j = i; j < Math.min(float32.length, i + frame); j++) {
+        const sample = float32[j] || 0;
+        sum += sample * sample;
+        count++;
+      }
+      const rms = Math.sqrt(sum / Math.max(1, count));
+      rmsFrames.push(rms);
+      maxRms = Math.max(maxRms, rms);
+    }
+    const threshold = Math.max(0.01, maxRms * 0.12);
+    let startFrame = 0, endFrame = rmsFrames.length - 1;
+    while (startFrame < rmsFrames.length && rmsFrames[startFrame] < threshold) startFrame++;
+    while (endFrame > startFrame && rmsFrames[endFrame] < threshold) endFrame--;
+    if (startFrame >= rmsFrames.length) return float32;
+    const start = Math.max(0, startFrame * frame - pad);
+    const end = Math.min(float32.length, (endFrame + 1) * frame + pad);
+    const maxSamples = Math.floor(sr * 2.8);
+    const trimmed = float32.slice(start, end);
+    return trimmed.length > maxSamples ? trimmed.slice(0, maxSamples) : trimmed;
+  }
+
   function enhanceSpeechAudio(float32) {
     if (!float32 || !float32.length) return float32;
     const out = new Float32Array(float32.length);
@@ -1357,9 +1387,68 @@
     return new Blob([buf], {type:'audio/wav'});
   }
 
+  function getSpeechMimeType() {
+    if (!window.MediaRecorder) return '';
+    return ['audio/webm;codecs=opus', 'audio/webm'].find(type => MediaRecorder.isTypeSupported(type)) || '';
+  }
+
+  function startSpeechRecording() {
+    const mimeType = getSpeechMimeType();
+    if (!micStream || !mimeType) return;
+    try {
+      speechChunks = [];
+      speechRecorder = new MediaRecorder(micStream, {
+        mimeType,
+        audioBitsPerSecond: 32000,
+      });
+      speechBlobPromise = new Promise(resolve => {
+        speechRecorder.ondataavailable = event => {
+          if (event.data && event.data.size > 0) speechChunks.push(event.data);
+        };
+        speechRecorder.onstop = () => {
+          const blob = speechChunks.length ? new Blob(speechChunks, { type: mimeType }) : null;
+          speechChunks = [];
+          resolve(blob);
+        };
+        speechRecorder.onerror = () => {
+          speechChunks = [];
+          resolve(null);
+        };
+      });
+      speechRecorder.start();
+    } catch (_) {
+      speechRecorder = null;
+      speechBlobPromise = null;
+      speechChunks = [];
+    }
+  }
+
+  async function stopSpeechRecording() {
+    const recorder = speechRecorder;
+    const pendingBlob = speechBlobPromise;
+    speechRecorder = null;
+    speechBlobPromise = null;
+    if (!recorder || !pendingBlob) return null;
+    try {
+      if (recorder.state !== 'inactive') recorder.stop();
+      const blob = await pendingBlob;
+      return blob && blob.size > 120 ? blob : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function prepareSpeechBlob(float32) {
+    const compressed = await stopSpeechRecording();
+    if (compressed) return compressed;
+    const trimmed = trimSpeechAudio(float32, 16000);
+    return pcmToWav(enhanceSpeechAudio(trimmed), 16000);
+  }
+
   async function transcribe(blob) {
     const fd = new FormData();
-    fd.append('audio', blob, 'speech.wav');
+    const filename = blob.type.includes('webm') ? 'speech.webm' : 'speech.wav';
+    fd.append('audio', blob, filename);
     fd.append('language', LANGS[langIdx][0]);
     if (state.current?.word) fd.append('prompt', state.current.word);
     const r = await fetch('/api/transcribe', { method:'POST', body: fd });
@@ -1374,11 +1463,15 @@
   }
 
   async function handleUtterance(float32) {
-    if (busy || !state.running) return;
+    if (busy || !state.running) {
+      await stopSpeechRecording();
+      return;
+    }
     busy = true;
     try {
-      const wav = pcmToWav(enhanceSpeechAudio(float32), 16000);
-      const heard = (await transcribe(wav)).trim();
+      document.getElementById('spoken').textContent = '⏳ Analyse...';
+      const audioBlob = await prepareSpeechBlob(float32);
+      const heard = (await transcribe(audioBlob)).trim();
       if (!heard) return;
       if (state.awaitingStart) {
         document.getElementById('spoken').textContent = `🎙 ${heard}`;
@@ -1437,6 +1530,7 @@
       redemptionFrames: 12,
       baseAssetPath: 'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.24/dist/',
       onnxWASMBasePath: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/',
+      onSpeechStart: () => { startSpeechRecording(); },
       onSpeechEnd: (audio) => { handleUtterance(audio); },
     };
     if (micStream) vadOptions.stream = micStream;
