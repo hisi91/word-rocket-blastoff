@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import {
-  createToastTransitionTracker,
-  evaluateToastTransition,
-  startConnectionMonitor,
-  useConnectionMonitor,
-  type ConnectionStatus,
-  type ToastTransitionTracker,
-} from "@/services/connectionMonitor";
+type ConnectionStatus = "good" | "degraded" | "poor" | "offline";
+
+interface ConnectionState {
+  latencyMs: number | null;
+  rawLatencyMs: number | null;
+  status: ConnectionStatus;
+  lastChecked: Date | null;
+  pingHistory: number[];
+}
+
+const PING_INTERVAL_MS = 5000;
+const PING_TIMEOUT_MS = 4500;
 
 const STATUS_DOTS: Record<ConnectionStatus, string> = {
   good: "🟢",
@@ -26,6 +30,18 @@ const STATUS_LABELS: Record<ConnectionStatus, string> = {
 
 function formatLatency(latencyMs: number | null) {
   return latencyMs === null ? "..." : `${latencyMs}ms`;
+}
+
+function getStatus(latencyMs: number | null): ConnectionStatus {
+  if (latencyMs === null) return "offline";
+  if (latencyMs < 1000) return "good";
+  if (latencyMs < 3000) return "degraded";
+  return "poor";
+}
+
+function average(values: number[]) {
+  if (values.length === 0) return null;
+  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
 function Sparkline({ values }: { values: number[] }) {
@@ -49,28 +65,129 @@ function Sparkline({ values }: { values: number[] }) {
 }
 
 export function ConnectionIndicator({ visible }: { visible: boolean }) {
-  const connection = useConnectionMonitor();
+  const [connection, setConnection] = useState<ConnectionState>({
+    latencyMs: null,
+    rawLatencyMs: null,
+    status: "offline",
+    lastChecked: null,
+    pingHistory: [],
+  });
+  const [isPinging, setIsPinging] = useState(false);
   const [tooltipOpen, setTooltipOpen] = useState(false);
-  const trackerRef = useRef<ToastTransitionTracker>(createToastTransitionTracker());
+  const warningRef = useRef({
+    status: null as ConnectionStatus | null,
+    count: 0,
+    lastNotified: null as ConnectionStatus | null,
+  });
 
   useEffect(() => {
-    startConnectionMonitor();
-  }, []);
+    if (!visible) return;
+
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let activeController: AbortController | null = null;
+
+    const stop = () => {
+      if (intervalId) window.clearInterval(intervalId);
+      intervalId = null;
+      activeController?.abort();
+      activeController = null;
+      setIsPinging(false);
+    };
+
+    const ping = async () => {
+      if (document.hidden || activeController) return;
+
+      const controller = new AbortController();
+      activeController = controller;
+      setIsPinging(true);
+      const timeoutId = window.setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
+      const startedAt = performance.now();
+
+      try {
+        const response = await fetch("/api/ping-ai", {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error(`ping-ai ${response.status}`);
+
+        const rawLatencyMs = Math.max(0, Math.round(performance.now() - startedAt));
+        setConnection((current) => {
+          const pingHistory = [...current.pingHistory, rawLatencyMs].slice(-3);
+          const latencyMs = average(pingHistory);
+
+          return {
+            latencyMs,
+            rawLatencyMs,
+            status: getStatus(latencyMs),
+            lastChecked: new Date(),
+            pingHistory,
+          };
+        });
+      } catch {
+        setConnection((current) => ({
+          ...current,
+          latencyMs: null,
+          rawLatencyMs: null,
+          status: "offline",
+          lastChecked: new Date(),
+        }));
+      } finally {
+        window.clearTimeout(timeoutId);
+        activeController = null;
+        setIsPinging(false);
+      }
+    };
+
+    const start = () => {
+      if (intervalId || document.hidden) return;
+      void ping();
+      intervalId = window.setInterval(() => {
+        void ping();
+      }, PING_INTERVAL_MS);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stop();
+        return;
+      }
+      start();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    start();
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      stop();
+    };
+  }, [visible]);
 
   useEffect(() => {
-    const result = evaluateToastTransition(
-      trackerRef.current,
-      connection.status,
-      visible,
-    );
-    trackerRef.current = result.tracker;
+    const problemStatus = visible && (connection.status === "poor" || connection.status === "offline");
 
-    if (!result.shouldNotify) return;
+    if (!problemStatus) {
+      warningRef.current = { status: null, count: 0, lastNotified: null };
+      return;
+    }
 
-    toast.warning("Connexion dégradée — la validation des mots peut être lente", {
-      duration: 4000,
-      closeButton: true,
-    });
+    const warning = warningRef.current;
+    const count = warning.status === connection.status ? warning.count + 1 : 1;
+    const shouldNotify = count >= 2 && warning.lastNotified !== connection.status;
+
+    warningRef.current = {
+      status: connection.status,
+      count,
+      lastNotified: shouldNotify ? connection.status : warning.lastNotified,
+    };
+
+    if (shouldNotify) {
+      toast.warning("Connexion dégradée — la validation des mots peut être lente", {
+        duration: 4000,
+        closeButton: true,
+      });
+    }
   }, [connection.lastChecked, connection.status, visible]);
 
   const statusDot = STATUS_DOTS[connection.status];
@@ -95,7 +212,7 @@ export function ConnectionIndicator({ visible }: { visible: boolean }) {
         onBlur={() => setTooltipOpen(false)}
         className="group relative flex items-center gap-2 rounded-md border border-border bg-card/85 px-3 py-2 shadow-lg backdrop-blur transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <span className={connection.isPinging ? "animate-pulse" : ""} aria-hidden="true">
+        <span className={isPinging ? "animate-pulse" : ""} aria-hidden="true">
           {statusDot}
         </span>
         <span className="min-w-12 text-left font-bold tabular-nums">
