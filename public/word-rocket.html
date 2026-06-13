@@ -621,6 +621,48 @@
     takeoff: { active: false, t0: 0, duration: 2600 },
   };
   const particles = [];
+  let wakeLock = null, wakeLockRequesting = false;
+
+  function shouldKeepScreenAwake() {
+    return (state.screen === 'LEVEL_INTRO' || state.screen === 'PLAYING') && !state.paused;
+  }
+
+  async function requestScreenWakeLock() {
+    if (!('wakeLock' in navigator) || wakeLock || wakeLockRequesting || !shouldKeepScreenAwake() || document.hidden) return;
+    wakeLockRequesting = true;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (err) {
+      console.warn('[wake-lock]', err?.message || err);
+    } finally {
+      wakeLockRequesting = false;
+    }
+  }
+
+  async function releaseScreenWakeLock() {
+    if (!wakeLock) return;
+    const lock = wakeLock;
+    wakeLock = null;
+    try { await lock.release(); } catch (_) {}
+  }
+
+  function syncScreenWakeLock() {
+    if (shouldKeepScreenAwake()) {
+      void requestScreenWakeLock();
+    } else {
+      void releaseScreenWakeLock();
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      wakeLock = null;
+      wakeLockRequesting = false;
+      return;
+    }
+    syncScreenWakeLock();
+  });
 
   function loadProgress() {
     try {
@@ -686,6 +728,7 @@
     document.getElementById('levelSelect').classList.remove('hidden');
     document.getElementById('topControls').style.display = 'none';
     renderLevelSelect();
+    syncScreenWakeLock();
     publishGameState();
   }
 
@@ -744,6 +787,7 @@
     runLevelIntro(lvl);
     hideChoices();
     updateHUD();
+    syncScreenWakeLock();
     publishGameState();
   }
 
@@ -765,6 +809,7 @@
           SFX.start();
           state.screen = 'PLAYING';
           state.running = true;
+          syncScreenWakeLock();
           publishGameState();
           setTimeout(() => {
             state.takeoff.active = false;
@@ -991,6 +1036,7 @@
     const m = document.getElementById('missed');
     m.innerHTML = state.missed.length ? '<b>Mots à réviser :</b><br>' + state.missed.join(' · ') : '<i>Aucun mot raté !</i>';
     document.getElementById('nextLevelBtn').style.display = hasNext ? 'inline-block' : 'none';
+    syncScreenWakeLock();
   }
 
   function explode(x, y, colors) {
@@ -1161,6 +1207,7 @@
   function setPaused(p) {
     state.paused = !!p;
     setButtonIcon('pauseBtn', state.paused ? 'play' : 'pause', state.paused ? 'Resume' : 'Pause');
+    syncScreenWakeLock();
     publishGameState();
   }
 
@@ -1187,6 +1234,7 @@
     document.getElementById('end').classList.add('hidden');
     document.getElementById('levelSelect').classList.add('hidden');
     document.getElementById('start').classList.remove('hidden');
+    syncScreenWakeLock();
     publishGameState();
   }
 
