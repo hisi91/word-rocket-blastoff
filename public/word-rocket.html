@@ -27,6 +27,17 @@
   .rocket-balance .rockets { display:inline-block; letter-spacing:4px; margin-left:6px; white-space:nowrap; }
   .rocket-balance .recharge { display:block; color:#fc6; font-size:12px; margin-top:3px; letter-spacing:1px; }
   .rocket-balance.empty { color:#fc6; }
+  .rocket-empty-modal { position:absolute; inset:0; z-index:45; display:flex; align-items:center; justify-content:center;
+    padding:24px; background:rgba(0,0,10,.52); backdrop-filter:blur(4px); }
+  .rocket-empty-modal.hidden { display:none; }
+  .rocket-empty-card { width:min(440px,92vw); border:2px solid #0ff8; border-radius:14px;
+    background:rgba(0,18,28,.94); box-shadow:0 0 28px #0ff4; padding:22px; text-align:center; }
+  .rocket-empty-title { color:#ffd54a; font-size:24px; font-weight:bold; letter-spacing:2px;
+    text-shadow:0 0 10px #000; margin-bottom:10px; }
+  .rocket-empty-text { color:#fff; font-size:15px; line-height:1.6; text-shadow:0 0 6px #000; }
+  .rocket-empty-time { color:#0ff; font-weight:bold; letter-spacing:1px; white-space:nowrap; }
+  .rocket-empty-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:18px; }
+  .rocket-empty-actions button { font-size:13px; letter-spacing:1px; }
   .bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 14px 14px 14px;
     display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 10; }
   .side-controls { position: absolute; left: 8px; top: 56px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
@@ -256,6 +267,21 @@
       <button class="big icon-text" id="retryBtn"><img class="ui-icon" src="ui-icons/undo.png" alt="">RETRY</button>
       <button class="big icon-text" id="nextLevelBtn"><img class="ui-icon" src="ui-icons/right.png" alt="">NEXT LEVEL</button>
       <button class="big icon-text" id="levelSelectBtn"><img class="ui-icon" src="ui-icons/menu.png" alt="">LEVEL SELECT</button>
+    </div>
+  </div>
+
+  <div class="rocket-empty-modal hidden" id="rocketEmptyModal" role="dialog" aria-modal="true" aria-labelledby="rocketEmptyTitle">
+    <div class="rocket-empty-card">
+      <div class="rocket-empty-title" id="rocketEmptyTitle">PLUS DE ROCKETS 🚀</div>
+      <div class="rocket-empty-text" id="rocketEmptyText">
+        Il ne reste plus de rockets. Prochaine rocket dans
+        <span class="rocket-empty-time" id="rocketRechargeTimer">--:--</span>.
+      </div>
+      <div class="rocket-empty-actions">
+        <button type="button" id="shareRocketBtn">Partager le jeu</button>
+        <button type="button" id="buyRocketBtn">Acheter des rockets</button>
+        <button type="button" id="closeRocketEmptyBtn">OK</button>
+      </div>
     </div>
   </div>
 </div>
@@ -627,6 +653,7 @@
   let flameImg = null;
   let levelProgress = loadProgress();
   let rocketBalance = loadRocketBalance();
+  let rocketEmptyTimer = null;
   const state = {
     screen: 'START', running: false, paused: false, awaitingStart: false, levelIdx: 0, score: 0, lives: 3, combo: 0,
     queue: [], current: null, missed: [], correct: 0, attempted: 0, totalObjects: 0,
@@ -731,12 +758,60 @@
     return Math.max(1, Math.ceil((ROCKET_REGEN_MS - elapsed) / 60000));
   }
 
+  function nextRocketRemainingMs() {
+    if (rocketBalance.count >= MAX_ROCKET_BALANCE) return 0;
+    const elapsed = Date.now() - rocketBalance.updatedAt;
+    return Math.max(0, ROCKET_REGEN_MS - elapsed);
+  }
+
+  function formatRocketWait(ms) {
+    const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
   function rocketBalanceText() {
     const rockets = rocketBalance.count > 0 ? '🚀'.repeat(rocketBalance.count) : '0 rocket';
     const recharge = rocketBalance.count < MAX_ROCKET_BALANCE
       ? `<span class="recharge">+1 rocket dans ${nextRocketMinutes()} min</span>`
       : '';
     return `Votre solde actuel: <span class="rockets">${rockets}</span>${recharge}`;
+  }
+
+  function updateRocketEmptyModal() {
+    const modal = document.getElementById('rocketEmptyModal');
+    if (!modal || modal.classList.contains('hidden')) return;
+    refreshRocketBalance();
+    const timer = document.getElementById('rocketRechargeTimer');
+    if (timer) timer.textContent = formatRocketWait(nextRocketRemainingMs());
+    if (rocketBalance.count > 0) hideRocketEmptyMessage();
+  }
+
+  function showRocketEmptyMessage() {
+    refreshRocketBalance();
+    const modal = document.getElementById('rocketEmptyModal');
+    const text = document.getElementById('rocketEmptyText');
+    const timer = document.getElementById('rocketRechargeTimer');
+    if (!modal || !text || !timer) return;
+    text.innerHTML = `Il ne reste plus de rockets. Prochaine rocket dans <span class="rocket-empty-time" id="rocketRechargeTimer">${formatRocketWait(nextRocketRemainingMs())}</span>.`;
+    modal.classList.remove('hidden');
+    clearInterval(rocketEmptyTimer);
+    rocketEmptyTimer = setInterval(updateRocketEmptyModal, 1000);
+  }
+
+  function hideRocketEmptyMessage() {
+    const modal = document.getElementById('rocketEmptyModal');
+    if (modal) modal.classList.add('hidden');
+    clearInterval(rocketEmptyTimer);
+    rocketEmptyTimer = null;
+  }
+
+  function showRocketEmptyPlaceholder(kind) {
+    const text = document.getElementById('rocketEmptyText');
+    if (!text) return;
+    const label = kind === 'share' ? 'Le partage du jeu arrive bientôt.' : 'L’achat de rockets arrive bientôt.';
+    text.innerHTML = `${label}<br>Prochaine rocket gratuite dans <span class="rocket-empty-time" id="rocketRechargeTimer">${formatRocketWait(nextRocketRemainingMs())}</span>.`;
   }
 
   function updateRocketBalanceUI() {
@@ -764,6 +839,7 @@
     refreshRocketBalance();
     if (rocketBalance.count > 0) return true;
     updateRocketBalanceUI();
+    showRocketEmptyMessage();
     return false;
   }
 
@@ -855,6 +931,7 @@
   async function startLevel(levelIdx) {
     if (levelIdx + 1 > levelProgress.unlocked) return;
     if (!canStartLevel()) return;
+    hideRocketEmptyMessage();
     state.screen = 'LEVEL_INTRO';
     state.levelIdx = Math.max(0, Math.min(levelIdx, LEVELS.length - 1));
     state.score = 0; state.lives = 3; state.combo = 0;
@@ -1728,6 +1805,9 @@
   document.getElementById('retryBtn').addEventListener('click', () => { unlockSpeech(); startLevel(state.levelIdx); });
   document.getElementById('nextLevelBtn').addEventListener('click', () => { unlockSpeech(); startLevel(state.levelIdx + 1); });
   document.getElementById('levelSelectBtn').addEventListener('click', () => { unlockSpeech(); showLevelSelect(); });
+  document.getElementById('closeRocketEmptyBtn').addEventListener('click', hideRocketEmptyMessage);
+  document.getElementById('shareRocketBtn').addEventListener('click', () => showRocketEmptyPlaceholder('share'));
+  document.getElementById('buyRocketBtn').addEventListener('click', () => showRocketEmptyPlaceholder('buy'));
   document.getElementById('pauseBtn').addEventListener('click', () => { if (state.running) setPaused(!state.paused); });
   document.getElementById('restartBtn').addEventListener('click', () => { unlockSpeech(); startLevel(state.levelIdx); });
   document.getElementById('homeBtn').addEventListener('click', () => {
