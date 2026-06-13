@@ -21,6 +21,12 @@
   .hearts { color: #ff3a6b; letter-spacing: 4px; font-size: 18px; }
   .combo { color: #ffd54a; }
   .level { color: #7cf; }
+  .rocket-stock-hud { display:inline-flex; align-items:center; gap:4px; color:#ffd54a; }
+  .rocket-stock-hud .rocket-icon { font-size:18px; line-height:1; }
+  .rocket-balance { color:#fff; font-size:16px; line-height:1.4; text-align:center; text-shadow:0 0 8px #000; }
+  .rocket-balance .rockets { display:inline-block; letter-spacing:4px; margin-left:6px; white-space:nowrap; }
+  .rocket-balance .recharge { display:block; color:#fc6; font-size:12px; margin-top:3px; letter-spacing:1px; }
+  .rocket-balance.empty { color:#fc6; }
   .bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 14px 14px 14px;
     display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 10; }
   .side-controls { position: absolute; left: 8px; top: 56px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
@@ -176,6 +182,7 @@
   <div class="hud">
     <div class="score">SCORE <span id="score">0</span></div>
     <div class="level">LVL <span id="lvl">1</span></div>
+    <div class="rocket-stock-hud"><span id="rocketStockCount">5</span><span class="rocket-icon" aria-hidden="true">🚀</span></div>
     <div class="combo">x<span id="mult">1</span> <span id="combo">0</span></div>
     <div class="hearts" id="hearts">♥♥♥</div>
   </div>
@@ -206,6 +213,7 @@
 
   <div class="overlay" id="start">
     <div class="title">WORD ROCKET</div>
+    <div id="homeRocketBalance" class="rocket-balance"></div>
     <button type="button" class="info-toggle" id="infoBtn">INFORMATION</button>
     <div class="subtitle start-info hidden" id="startInfo">Des objets tombent du ciel — devine le mot en anglais avant qu'ils ne touchent ta fusée.
       <br>Les noms ne sont PAS affichés : à toi de reconnaître l'icône !
@@ -236,6 +244,7 @@
 
   <div class="overlay hidden" id="levelSelect">
     <div class="title">LEVEL SELECT</div>
+    <div id="levelRocketBalance" class="rocket-balance"></div>
     <div id="levelGrid" class="level-grid"></div>
   </div>
 
@@ -261,6 +270,9 @@
   const LEVELS_CACHE_KEY = 'wr_levels_v8';
   const LEVEL_OBJECTS_CACHE_KEY = 'wr_level_objects_v1';
   const PROGRESS_KEY = 'wr_level_progress_v1';
+  const ROCKET_BALANCE_KEY = 'wr_rocket_balance_v1';
+  const MAX_ROCKET_BALANCE = 5;
+  const ROCKET_REGEN_MS = 60 * 60 * 1000;
   const LEVELS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
   const LEVELS_FETCH_TIMEOUT = 3500;
   function objectsForLevel(levelNumber) {
@@ -614,6 +626,7 @@
   let rocketImg = null;
   let flameImg = null;
   let levelProgress = loadProgress();
+  let rocketBalance = loadRocketBalance();
   const state = {
     screen: 'START', running: false, paused: false, awaitingStart: false, levelIdx: 0, score: 0, lives: 3, combo: 0,
     queue: [], current: null, missed: [], correct: 0, attempted: 0, totalObjects: 0,
@@ -680,6 +693,80 @@
     try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(levelProgress)); } catch {}
   }
 
+  function normalizeRocketBalance(raw) {
+    const now = Date.now();
+    const rawCount = Number(raw?.count);
+    const current = Number.isFinite(rawCount) ? Math.max(0, Math.min(MAX_ROCKET_BALANCE, rawCount)) : MAX_ROCKET_BALANCE;
+    const rawUpdatedAt = Number(raw?.updatedAt);
+    const updatedAt = Number.isFinite(rawUpdatedAt) ? rawUpdatedAt : now;
+    if (current >= MAX_ROCKET_BALANCE) return { count: MAX_ROCKET_BALANCE, updatedAt: now };
+    const earned = Math.max(0, Math.floor((now - updatedAt) / ROCKET_REGEN_MS));
+    const count = Math.min(MAX_ROCKET_BALANCE, current + earned);
+    const nextUpdatedAt = count >= MAX_ROCKET_BALANCE ? now : updatedAt + earned * ROCKET_REGEN_MS;
+    return { count, updatedAt: nextUpdatedAt || now };
+  }
+
+  function loadRocketBalance() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(ROCKET_BALANCE_KEY) || 'null');
+      return normalizeRocketBalance(saved || { count: MAX_ROCKET_BALANCE, updatedAt: Date.now() });
+    } catch {
+      return { count: MAX_ROCKET_BALANCE, updatedAt: Date.now() };
+    }
+  }
+
+  function saveRocketBalance() {
+    try { localStorage.setItem(ROCKET_BALANCE_KEY, JSON.stringify(rocketBalance)); } catch {}
+  }
+
+  function refreshRocketBalance() {
+    rocketBalance = normalizeRocketBalance(rocketBalance);
+    saveRocketBalance();
+    updateRocketBalanceUI();
+  }
+
+  function nextRocketMinutes() {
+    if (rocketBalance.count >= MAX_ROCKET_BALANCE) return 0;
+    const elapsed = Date.now() - rocketBalance.updatedAt;
+    return Math.max(1, Math.ceil((ROCKET_REGEN_MS - elapsed) / 60000));
+  }
+
+  function rocketBalanceText() {
+    const rockets = rocketBalance.count > 0 ? '🚀'.repeat(rocketBalance.count) : '0 rocket';
+    const recharge = rocketBalance.count < MAX_ROCKET_BALANCE
+      ? `<span class="recharge">+1 rocket dans ${nextRocketMinutes()} min</span>`
+      : '';
+    return `Votre solde actuel: <span class="rockets">${rockets}</span>${recharge}`;
+  }
+
+  function updateRocketBalanceUI() {
+    const home = document.getElementById('homeRocketBalance');
+    const select = document.getElementById('levelRocketBalance');
+    [home, select].forEach(el => {
+      if (!el) return;
+      el.innerHTML = rocketBalanceText();
+      el.classList.toggle('empty', rocketBalance.count <= 0);
+    });
+    const hud = document.getElementById('rocketStockCount');
+    if (hud) hud.textContent = rocketBalance.count;
+  }
+
+  function spendRocketOnFail() {
+    refreshRocketBalance();
+    if (rocketBalance.count <= 0) return;
+    const updatedAt = rocketBalance.count >= MAX_ROCKET_BALANCE ? Date.now() : rocketBalance.updatedAt;
+    rocketBalance = { count: rocketBalance.count - 1, updatedAt };
+    saveRocketBalance();
+    updateRocketBalanceUI();
+  }
+
+  function canStartLevel() {
+    refreshRocketBalance();
+    if (rocketBalance.count > 0) return true;
+    updateRocketBalanceUI();
+    return false;
+  }
+
   function starsForMistakes(mistakes) {
     if (mistakes <= 0) return 3;
     if (mistakes === 1) return 2;
@@ -713,6 +800,7 @@
 
   function showLevelSelect() {
     SFX.start();
+    refreshRocketBalance();
     state.screen = 'LEVEL_SELECT';
     state.running = false;
     state.paused = false;
@@ -766,6 +854,7 @@
 
   async function startLevel(levelIdx) {
     if (levelIdx + 1 > levelProgress.unlocked) return;
+    if (!canStartLevel()) return;
     state.screen = 'LEVEL_INTRO';
     state.levelIdx = Math.max(0, Math.min(levelIdx, LEVELS.length - 1));
     state.score = 0; state.lives = 3; state.combo = 0;
@@ -1018,6 +1107,7 @@
     state.running = false;
     setPaused(false);
     if (won) recordLevelWin();
+    else spendRocketOnFail();
     document.getElementById('topControls').style.display = 'none';
     hideChoices();
     document.getElementById('end').classList.remove('hidden');
@@ -1048,6 +1138,7 @@
   }
 
   function updateHUD() {
+    refreshRocketBalance();
     document.getElementById('score').textContent = state.score;
     document.getElementById('lvl').textContent = state.levelIdx+1;
     document.getElementById('hearts').textContent = '♥'.repeat(state.lives) + '♡'.repeat(Math.max(0,3-state.lives));
@@ -1309,6 +1400,7 @@
   let choicesEnabled = false;
   let micReady = false, levelsReady = false;
   function updateStartBtn() {
+    refreshRocketBalance();
     const btn = document.getElementById('startBtn');
     btn.disabled = !(levelsReady && micReady);
     const status = document.getElementById('loadStatus');
@@ -1653,6 +1745,8 @@
       }
     }
   });
+  updateRocketBalanceUI();
+  setInterval(refreshRocketBalance, 60 * 1000);
 
   // ===== Boot =====
   resize();
