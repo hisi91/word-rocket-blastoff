@@ -1476,14 +1476,14 @@
   let speakOnAppear = false;
   let choicesEnabled = false;
   let micReady = false, levelsReady = false;
-  const SINGLE_WORD_AUDIO_PAD_SECONDS = 0.08;
+  const SINGLE_WORD_AUDIO_PAD_SECONDS = 0.05;
   const SINGLE_WORD_MAX_AUDIO_SECONDS = 2.0;
   const SINGLE_WORD_VAD = {
     positiveSpeechThreshold: 0.45,
     negativeSpeechThreshold: 0.25,
     minSpeechFrames: 2,
     preSpeechPadFrames: 6,
-    redemptionFrames: 5,
+    redemptionFrames: 3,
   };
   function updateStartBtn() {
     refreshRocketBalance();
@@ -1543,6 +1543,22 @@
     return Math.round(Math.min(1, Math.max(raw, phr) + contains) * 100);
   }
   const ACCEPT_THRESHOLD = 68; // % similarity needed to validate
+
+  function normalizeSingleWordTranscript(text) {
+    const raw = (text || '').trim();
+    if (!raw) return '';
+    const words = raw
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .match(/[a-z]+/g) || [];
+    if (words.length <= 1) return raw;
+    const unique = [];
+    words.forEach(word => {
+      if (unique[unique.length - 1] !== word) unique.push(word);
+    });
+    return unique.length === 1 ? unique[0] : raw;
+  }
 
   // --- Recorder helper (VAD passes Float32 PCM 16kHz; prefer compact WebM/Opus, fallback to WAV) ---
   function trimSpeechAudio(float32, sr) {
@@ -1694,10 +1710,12 @@
       return;
     }
     busy = true;
+    try { if (micVad) micVad.pause(); } catch (_) {}
     try {
       document.getElementById('spoken').textContent = '⏳ Analyse...';
       const audioBlob = await prepareSpeechBlob(float32);
-      const heard = (await transcribe(audioBlob)).trim();
+      const rawHeard = (await transcribe(audioBlob)).trim();
+      const heard = normalizeSingleWordTranscript(rawHeard);
       if (!heard) return;
       if (state.awaitingStart) {
         document.getElementById('spoken').textContent = `🎙 ${heard}`;
@@ -1716,6 +1734,9 @@
       document.getElementById('spoken').textContent = '⚠️ ' + e.message;
     } finally {
       busy = false;
+      if (recOn && micVad && state.running) {
+        try { micVad.start(); } catch (_) {}
+      }
     }
   }
 
@@ -1753,6 +1774,7 @@
       baseAssetPath: 'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.24/dist/',
       onnxWASMBasePath: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/',
       onSpeechStart: () => {
+        if (busy) return;
         if (state.running) document.getElementById('spoken').textContent = "🎙 Je t'écoute...";
         startSpeechRecording();
       },

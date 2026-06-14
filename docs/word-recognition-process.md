@@ -45,11 +45,17 @@ Les reglages actuels rendent le micro plus tolerant aux environnements non silen
 positiveSpeechThreshold: 0.45,
 negativeSpeechThreshold: 0.25,
 minSpeechFrames: 2,
-preSpeechPadFrames: 8,
-redemptionFrames: 12,
+preSpeechPadFrames: 6,
+redemptionFrames: 3,
 ```
 
-Ces valeurs permettent de declencher plus facilement la detection de parole et de garder un peu plus de contexte avant et apres le mot.
+Ces valeurs sont maintenant optimisees pour un jeu de mots courts :
+
+- le VAD detecte rapidement le debut de la voix
+- il garde un petit contexte avant le mot
+- il attend beaucoup moins de silence apres le mot avant d'envoyer l'audio
+
+`redemptionFrames: 3` correspond approximativement a 90-100 ms de silence selon la taille des frames du VAD. L'objectif est d'envoyer l'audio juste apres la prononciation d'un mot, pour eviter que l'enfant repete le mot parce qu'il pense que le jeu n'a rien entendu.
 
 ## 3. Nettoyage leger de l'audio
 
@@ -59,8 +65,18 @@ Avant d'envoyer l'audio a Groq, le jeu applique un pretraitement leger :
 - normalisation douce du volume
 - limitation du gain pour eviter la saturation
 - suppression des silences au debut et a la fin du signal
+- limitation de l'audio a environ 2 secondes
 
 Le but est d'aider Whisper/Groq a recevoir une voix plus lisible sans transformer excessivement le signal.
+
+Le padding audio autour du mot est volontairement court :
+
+```js
+SINGLE_WORD_AUDIO_PAD_SECONDS = 0.05
+SINGLE_WORD_MAX_AUDIO_SECONDS = 2.0
+```
+
+Cela limite la quantite d'audio envoyee a Groq et reduit le risque de capturer deux repetitions du meme mot.
 
 Le navigateur demande aussi ces options micro quand elles sont disponibles :
 
@@ -155,7 +171,54 @@ const ACCEPT_THRESHOLD = 68;
 
 Si le score est superieur ou egal a `68%`, le jeu considere que le mot est correct.
 
-## 8. Validation ou correction
+## 8. Gestion des repetitions rapides
+
+Les enfants peuvent repeter le mot plusieurs fois si la reponse n'est pas instantanee, par exemple :
+
+```txt
+apple apple
+```
+
+Pour reduire ce probleme, le jeu applique maintenant trois protections.
+
+### Capture envoyee plus vite
+
+Le silence final attendu par le VAD est reduit avec :
+
+```js
+redemptionFrames: 3
+```
+
+Cela permet de fermer la capture audio peu apres la fin du mot.
+
+### Micro verrouille pendant l'analyse
+
+Des que le VAD a capture un mot, le jeu affiche :
+
+```txt
+Analyse...
+```
+
+Pendant cette phase, le jeu met le VAD en pause et ignore les nouvelles captures. Le micro est relance seulement quand l'analyse Groq est terminee.
+
+Cela evite d'envoyer plusieurs fois le meme mot pendant que la premiere reponse est encore en cours.
+
+### Nettoyage des repetitions identiques
+
+Si Groq renvoie une repetition consecutive du meme mot, le jeu la simplifie avant le scoring.
+
+Exemples :
+
+| Transcription Groq | Texte utilise pour le score |
+| --- | --- |
+| `apple` | `apple` |
+| `apple apple` | `apple` |
+| `apple apple apple` | `apple` |
+| `apple banana` | `apple banana` |
+
+Le jeu ne garde pas automatiquement le premier mot si les mots sont differents, pour eviter de valider une mauvaise phrase par erreur.
+
+## 9. Validation ou correction
 
 Si le score est suffisant :
 
@@ -177,7 +240,7 @@ Dans de bonnes conditions, le temps attendu est environ :
 
 | Etape | Temps typique |
 | --- | --- |
-| Detection fin de parole VAD | 300 a 900 ms |
+| Detection fin de parole VAD | 90 a 250 ms |
 | Upload vers le backend | 30 a 250 ms |
 | Transcription Groq Whisper | 500 a 1500 ms |
 | Comparaison locale | quasi instantane |
@@ -185,7 +248,7 @@ Dans de bonnes conditions, le temps attendu est environ :
 Donc le temps total normal est souvent autour de :
 
 ```txt
-1 a 2.5 secondes
+0.8 a 2 secondes
 ```
 
 En reseau lent ou si Groq repond plus lentement, cela peut monter a :
@@ -231,7 +294,13 @@ Actions possibles :
 - ignorer les audios trop faibles ou trop longs
 - ajuster `redemptionFrames` si la fin de parole est detectee trop tard
 
-Etat actuel : une coupe de silence existe deja dans le fallback WAV. La version WebM/Opus s'appuie surtout sur les bornes du VAD.
+Etat actuel :
+
+- une coupe de silence existe deja dans le fallback WAV
+- le silence final VAD est reduit pour les mots courts
+- le padding audio est reduit a 0.05 seconde
+- l'audio fallback est limite a 2 secondes
+- la version WebM/Opus s'appuie surtout sur les bornes du VAD
 
 Gain attendu : fort, surtout si le VAD capture parfois plusieurs secondes au lieu d'un mot court.
 
@@ -246,7 +315,7 @@ Actions possibles :
 - afficher un petit loader pres du mot reconnu
 - indiquer clairement que le jeu a entendu quelque chose
 
-Etat actuel : le jeu affiche deja `Analyse...` pendant l'appel a Groq.
+Etat actuel : le jeu affiche `Je t'ecoute...` des le debut de voix, puis `Analyse...` pendant l'appel a Groq.
 
 Cela ne reduit pas la latence technique, mais reduit fortement la latence percue.
 
