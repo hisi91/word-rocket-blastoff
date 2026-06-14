@@ -1476,6 +1476,15 @@
   let speakOnAppear = false;
   let choicesEnabled = false;
   let micReady = false, levelsReady = false;
+  const SINGLE_WORD_AUDIO_PAD_SECONDS = 0.08;
+  const SINGLE_WORD_MAX_AUDIO_SECONDS = 2.0;
+  const SINGLE_WORD_VAD = {
+    positiveSpeechThreshold: 0.45,
+    negativeSpeechThreshold: 0.25,
+    minSpeechFrames: 2,
+    preSpeechPadFrames: 6,
+    redemptionFrames: 5,
+  };
   function updateStartBtn() {
     refreshRocketBalance();
     const btn = document.getElementById('startBtn');
@@ -1539,7 +1548,7 @@
   function trimSpeechAudio(float32, sr) {
     if (!float32 || !float32.length) return float32;
     const frame = Math.max(1, Math.floor(sr * 0.01));
-    const pad = Math.floor(sr * 0.12);
+    const pad = Math.floor(sr * SINGLE_WORD_AUDIO_PAD_SECONDS);
     let maxRms = 0;
     const rmsFrames = [];
     for (let i = 0; i < float32.length; i += frame) {
@@ -1560,7 +1569,7 @@
     if (startFrame >= rmsFrames.length) return float32;
     const start = Math.max(0, startFrame * frame - pad);
     const end = Math.min(float32.length, (endFrame + 1) * frame + pad);
-    const maxSamples = Math.floor(sr * 2.8);
+    const maxSamples = Math.floor(sr * SINGLE_WORD_MAX_AUDIO_SECONDS);
     const trimmed = float32.slice(start, end);
     return trimmed.length > maxSamples ? trimmed.slice(0, maxSamples) : trimmed;
   }
@@ -1740,14 +1749,13 @@
       } catch (_) {}
     }
     const vadOptions = {
-      positiveSpeechThreshold: 0.45,
-      negativeSpeechThreshold: 0.25,
-      minSpeechFrames: 2,
-      preSpeechPadFrames: 8,
-      redemptionFrames: 12,
+      ...SINGLE_WORD_VAD,
       baseAssetPath: 'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.24/dist/',
       onnxWASMBasePath: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/',
-      onSpeechStart: () => { startSpeechRecording(); },
+      onSpeechStart: () => {
+        if (state.running) document.getElementById('spoken').textContent = "🎙 Je t'écoute...";
+        startSpeechRecording();
+      },
       onSpeechEnd: (audio) => { handleUtterance(audio); },
     };
     if (micStream) vadOptions.stream = micStream;
