@@ -51,7 +51,8 @@
     background: rgba(0,20,30,.78); color: #fff; font-family: inherit; font-size: 16px;
     font-weight: bold; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase;
     cursor: pointer; transition: transform .08s, background .15s, border-color .15s;
-    box-shadow: 0 0 10px #0ff3; overflow: hidden; text-overflow: ellipsis; }
+    box-shadow: 0 0 10px #0ff3; overflow: hidden; display:flex; align-items:center; justify-content:center; }
+  #choices .choice-label { display:block; max-width:100%; white-space:nowrap; line-height:1; }
   #choices button:hover { background: rgba(0,60,80,.85); transform: translateY(-2px); }
   #choices button:active { transform: translateY(1px); }
   #choices button.good { background: #063; border-color: #0f8; color: #0f8; box-shadow: 0 0 18px #0f8; }
@@ -1442,6 +1443,21 @@
     DEFAULT_LEVELS.forEach(l => l.level_objects.forEach(o => { if (o.word) set.add(o.word); }));
     return [...set];
   }
+
+  function fitChoiceText(button) {
+    const label = button.querySelector('.choice-label');
+    if (!label) return;
+    const wordLength = label.textContent.trim().length;
+    let size = wordLength > 14 ? 11 : wordLength > 11 ? 12 : wordLength > 9 ? 14 : 16;
+    label.style.fontSize = `${size}px`;
+    label.style.letterSpacing = wordLength > 9 ? '0' : '1px';
+    const available = Math.max(40, button.clientWidth - 12);
+    while (label.scrollWidth > available && size > 9) {
+      size -= 1;
+      label.style.fontSize = `${size}px`;
+    }
+  }
+
   function showChoices(correct) {
     const pool = allWords().filter(w => norm(w) !== norm(correct));
     // shuffle pool
@@ -1454,7 +1470,10 @@
     opts.forEach(w => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.textContent = w;
+      const label = document.createElement('span');
+      label.className = 'choice-label';
+      label.textContent = w;
+      b.appendChild(label);
       b.addEventListener('click', () => {
         if (!state.running || !state.current) return;
         const isGood = norm(w) === norm(state.current.word);
@@ -1464,6 +1483,7 @@
         else { loseLife(); }
       });
       choicesEl.appendChild(b);
+      fitChoiceText(b);
     });
   }
   hideChoices();
