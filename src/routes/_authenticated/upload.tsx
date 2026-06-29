@@ -16,9 +16,24 @@ function UploadPage() {
   const [results, setResults] = useState<UploadResult[]>([]);
   const [email, setEmail] = useState<string | null>(null);
   const [folders, setFolders] = useState<string[]>([]);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    supabase.auth.getUser().then(async ({ data }) => {
+      const user = data.user;
+      setEmail(user?.email ?? null);
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      setIsAdmin(!!roles);
+    });
     supabase
       .from("levels")
       .select("folder_name")
@@ -27,6 +42,7 @@ function UploadPage() {
         if (data) setFolders(Array.from(new Set(data.map((d: any) => d.folder_name))));
       });
   }, []);
+
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
@@ -72,7 +88,15 @@ function UploadPage() {
           </div>
         </div>
 
-        <form onSubmit={handleUpload} className="bg-slate-800 rounded-2xl p-5 space-y-4">
+        {isAdmin === false && (
+          <div className="bg-red-900/40 border border-red-500/50 rounded-2xl p-5 mb-4 text-sm">
+            🔒 Accès réservé aux administrateurs. Ton compte ({email}) n'a pas le rôle <code>admin</code>.
+            Contacte le propriétaire du projet pour qu'il te l'attribue.
+          </div>
+        )}
+
+        <form onSubmit={handleUpload} className={`bg-slate-800 rounded-2xl p-5 space-y-4 ${isAdmin ? "" : "opacity-50 pointer-events-none"}`}>
+
           <div>
             <label className="block text-sm mb-1">Dossier (folder_name du niveau)</label>
             <input
