@@ -183,6 +183,14 @@
       text-shadow:0 5px 0 rgba(9,115,132,.45), 0 0 8px rgba(255,255,255,.5); }
   }
   .end-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
+  .end-stars { display:flex; justify-content:center; align-items:center; gap:4px; min-height:72px; }
+  .end-stars.hidden { display:none; }
+  .end-star { width:72px; height:72px; object-fit:contain;
+    filter:drop-shadow(0 4px 0 rgba(130,76,0,.28)); }
+  @media (max-width: 640px) {
+    .end-stars { min-height:60px; }
+    .end-star { width:60px; height:60px; }
+  }
 </style>
 </head>
 <body>
@@ -262,6 +270,7 @@
 
   <div class="overlay hidden" id="end">
     <div class="title" id="endTitle" style="font-size: clamp(32px,7vw,60px)">GAME OVER</div>
+    <div id="endStars" class="end-stars hidden" aria-label="Étoiles gagnées"></div>
     <div id="endStats" style="font-size:18px;line-height:1.8"></div>
     <div id="missed" class="endlist"></div>
     <div class="end-actions">
@@ -860,6 +869,22 @@
     saveProgress();
   }
 
+  function renderEndStars(won) {
+    const starsEl = document.getElementById('endStars');
+    if (!starsEl) return;
+    if (!won) {
+      starsEl.classList.add('hidden');
+      starsEl.innerHTML = '';
+      return;
+    }
+    const earnedStars = starsForMistakes(state.missed.length);
+    starsEl.innerHTML = Array.from({ length: earnedStars }, () =>
+      '<img class="end-star" src="assets/star.png" alt="">'
+    ).join('');
+    starsEl.classList.remove('hidden');
+    starsEl.setAttribute('aria-label', `${earnedStars} étoile${earnedStars > 1 ? 's' : ''} gagnée${earnedStars > 1 ? 's' : ''}`);
+  }
+
   function newFalling() {
     if (state.queue.length === 0) return null;
     const obj = state.queue.shift();
@@ -1199,6 +1224,7 @@
       endTitle.textContent = 'LEVEL FAILED';
       endTitle.style.color = '';
     }
+    renderEndStars(won);
     document.getElementById('endStats').innerHTML =
       `Niveau : <b>${state.levelIdx + 1}</b><br>Score : <b>${state.correct} / ${total}</b><br>Points : <b>${state.score}</b>`;
     const m = document.getElementById('missed');
