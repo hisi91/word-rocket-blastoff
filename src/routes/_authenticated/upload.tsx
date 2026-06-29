@@ -88,7 +88,15 @@ function UploadPage() {
           </div>
         </div>
 
-        <form onSubmit={handleUpload} className="bg-slate-800 rounded-2xl p-5 space-y-4">
+        {isAdmin === false && (
+          <div className="bg-red-900/40 border border-red-500/50 rounded-2xl p-5 mb-4 text-sm">
+            🔒 Accès réservé aux administrateurs. Ton compte ({email}) n'a pas le rôle <code>admin</code>.
+            Contacte le propriétaire du projet pour qu'il te l'attribue.
+          </div>
+        )}
+
+        <form onSubmit={handleUpload} className={`bg-slate-800 rounded-2xl p-5 space-y-4 ${isAdmin ? "" : "opacity-50 pointer-events-none"}`}>
+
           <div>
             <label className="block text-sm mb-1">Dossier (folder_name du niveau)</label>
             <input
