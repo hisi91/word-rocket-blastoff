@@ -16,9 +16,24 @@ function UploadPage() {
   const [results, setResults] = useState<UploadResult[]>([]);
   const [email, setEmail] = useState<string | null>(null);
   const [folders, setFolders] = useState<string[]>([]);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    supabase.auth.getUser().then(async ({ data }) => {
+      const user = data.user;
+      setEmail(user?.email ?? null);
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      setIsAdmin(!!roles);
+    });
     supabase
       .from("levels")
       .select("folder_name")
@@ -27,6 +42,7 @@ function UploadPage() {
         if (data) setFolders(Array.from(new Set(data.map((d: any) => d.folder_name))));
       });
   }, []);
+
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
