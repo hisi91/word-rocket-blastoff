@@ -244,6 +244,12 @@
     text-shadow:0 7px 0 rgba(9,115,132,.45), 0 0 10px rgba(255,255,255,.5);
     font-family:'Luckiest Guy','Courier New',monospace; letter-spacing:8px; animation:none; }
   #levelSelect .subtitle { color:#5c5c5c; text-shadow:0 1px 0 #fff8; }
+  .level-home-btn { position:absolute; top:18px; left:18px; z-index:4;
+    width:58px; height:58px; border-radius:50%; border:3px solid #fff5a8;
+    background:linear-gradient(#ff7bc8,#ef2ea7); box-shadow:0 6px 0 rgba(9,115,132,.45), 0 0 14px rgba(255,255,255,.55);
+    display:grid; place-items:center; cursor:pointer; transition:transform .14s ease; }
+  .level-home-btn:hover { transform:scale(1.06); }
+  .level-home-btn .ui-icon { width:34px; height:34px; }
   .level-grid { width:min(672px,94vw); max-height:72vh; overflow-y:auto; display:grid;
     grid-template-columns:repeat(4,126px); justify-content:center; gap:14px 36px; padding:20px 10px 28px; }
   .level-card { position:relative; min-height:174px; display:flex; align-items:flex-end;
@@ -272,6 +278,8 @@
     filter:drop-shadow(0 3px 0 rgba(130,76,0,.28)); }
   @media (max-width: 640px) {
     #levelSelect { gap:8px; padding:14px 12px 18px; }
+    .level-home-btn { top:10px; left:10px; width:48px; height:48px; border-width:2px; }
+    .level-home-btn .ui-icon { width:28px; height:28px; }
     .level-grid { width:min(308px,94vw); grid-template-columns:repeat(2,126px); gap:14px 28px; max-height:72vh; }
     #levelSelect .title { font-size:clamp(38px,13vw,58px); letter-spacing:2px; -webkit-text-stroke:3px #fff5a8;
       text-shadow:0 5px 0 rgba(9,115,132,.45), 0 0 8px rgba(255,255,255,.5); }
@@ -367,6 +375,7 @@
   </div>
 
   <div class="overlay hidden" id="levelSelect">
+    <button type="button" id="levelHomeBtn" class="level-home-btn" title="Home" aria-label="Home"><img class="ui-icon" src="ui-icons/home.png" alt=""></button>
     <div class="title">LEVEL SELECT</div>
     <div id="levelRocketBalance" class="rocket-balance"></div>
     <div id="levelGrid" class="level-grid"></div>
@@ -1985,6 +1994,7 @@
   document.getElementById('retryBtn').addEventListener('click', () => { unlockSpeech(); startLevel(state.levelIdx); });
   document.getElementById('nextLevelBtn').addEventListener('click', () => { unlockSpeech(); startLevel(state.levelIdx + 1); });
   document.getElementById('levelSelectBtn').addEventListener('click', () => { unlockSpeech(); showLevelSelect(); });
+  document.getElementById('levelHomeBtn').addEventListener('click', () => { unlockSpeech(); stopEverythingForHome(); });
   document.getElementById('closeRocketEmptyBtn').addEventListener('click', hideRocketEmptyMessage);
   document.getElementById('shareRocketBtn').addEventListener('click', () => showRocketEmptyPlaceholder('share'));
   document.getElementById('buyRocketBtn').addEventListener('click', () => showRocketEmptyPlaceholder('buy'));
