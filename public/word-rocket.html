@@ -132,22 +132,14 @@
   #start, #levelSelect {
     background:linear-gradient(#39a9df 0%, #7ed8f3 48%, #cdf4ff 100%); }
   #start { justify-content:center; gap:12px; overflow:hidden; padding:18px 18px 22px; }
-  #start::before, #start::after, #levelSelect::before, #levelSelect::after { content:''; position:absolute; pointer-events:none; z-index:0; }
-  #start::before, #levelSelect::before { left:-90px; top:13vh; width:190px; height:58px;
-    border-radius:999px; background:rgba(255,255,255,.72);
-    box-shadow:54px -18px 0 7px rgba(255,255,255,.72),
-      118px -8px 0 12px rgba(255,255,255,.72),
-      174px 8px 0 2px rgba(255,255,255,.72),
-      0 8px 0 rgba(24,102,132,.08);
-    filter:blur(.2px); animation:cloudDrift 18s linear infinite; }
-  #start::after, #levelSelect::after { right:-130px; bottom:10vh; width:260px; height:76px;
-    border-radius:999px; background:rgba(255,255,255,.5);
-    box-shadow:-70px -4px 0 5px rgba(255,255,255,.5),
-      42px -24px 0 13px rgba(255,255,255,.5),
-      126px -10px 0 10px rgba(255,255,255,.5),
-      0 10px 0 rgba(24,102,132,.07);
-    filter:blur(.4px); animation:cloudDrift 24s linear infinite reverse; }
-  @keyframes cloudDrift { 0% { transform:translateX(0); } 50% { transform:translateX(8vw); } 100% { transform:translateX(0); } }
+  .menu-cloud { position:absolute; z-index:0; width:var(--cloud-w); height:auto;
+    opacity:var(--cloud-opacity,.72); pointer-events:none; filter:drop-shadow(0 8px 0 rgba(24,102,132,.08));
+    animation:cloudDrift var(--cloud-speed,24s) ease-in-out infinite; }
+  .menu-cloud.c1 { --cloud-w:min(360px,44vw); --cloud-opacity:.62; --cloud-speed:24s; left:-110px; top:12vh; }
+  .menu-cloud.c2 { --cloud-w:min(520px,54vw); --cloud-opacity:.44; --cloud-speed:30s; right:-170px; top:20vh; animation-direction:reverse; }
+  .menu-cloud.c3 { --cloud-w:min(460px,50vw); --cloud-opacity:.5; --cloud-speed:28s; left:18vw; bottom:5vh; }
+  .menu-cloud.c4 { --cloud-w:min(280px,38vw); --cloud-opacity:.42; --cloud-speed:22s; right:12vw; bottom:25vh; animation-direction:reverse; }
+  @keyframes cloudDrift { 0%,100% { transform:translateX(0) translateY(0); } 50% { transform:translateX(7vw) translateY(-1.5vh); } }
   .home-sky-rocket { position:absolute; z-index:1; width:86px; height:24px; border-radius:52% 18% 18% 52%;
     background:linear-gradient(90deg,#f7f7f7 0 52%,#d0d6dc 53% 74%,#c81920 75% 100%);
     box-shadow:0 8px 0 rgba(56,85,103,.16); pointer-events:none; }
@@ -220,6 +212,10 @@
     .home-sky-rocket.r1 { left:-18px; top:10vh; transform:rotate(13deg) scale(.78); }
     .home-sky-rocket.r2 { right:-18px; top:18vh; transform:rotate(-18deg) scale(.68); }
     .home-sky-rocket.r3 { display:none; }
+    .menu-cloud.c1 { --cloud-w:250px; left:-120px; top:14vh; }
+    .menu-cloud.c2 { --cloud-w:330px; right:-180px; top:30vh; }
+    .menu-cloud.c3 { --cloud-w:320px; left:-70px; bottom:4vh; }
+    .menu-cloud.c4 { --cloud-w:210px; right:-80px; bottom:22vh; }
     #start .start-options { padding:10px 12px; gap:8px; }
     #start .opt-row { font-size:12px; gap:9px; }
     #start .opt-row .hint { display:none; }
@@ -330,6 +326,10 @@
   <div class="start-prompt" id="startPrompt"></div>
 
   <div class="overlay" id="start">
+    <img class="menu-cloud c1" src="assets/cloud.webp" alt="" aria-hidden="true">
+    <img class="menu-cloud c2" src="assets/cloud.webp" alt="" aria-hidden="true">
+    <img class="menu-cloud c3" src="assets/cloud.webp" alt="" aria-hidden="true">
+    <img class="menu-cloud c4" src="assets/cloud.webp" alt="" aria-hidden="true">
     <div class="home-sky-rocket r1" aria-hidden="true"></div>
     <div class="home-sky-rocket r2" aria-hidden="true"></div>
     <div class="home-sky-rocket r3" aria-hidden="true"></div>
@@ -371,6 +371,10 @@
   </div>
 
   <div class="overlay hidden" id="levelSelect">
+    <img class="menu-cloud c1" src="assets/cloud.webp" alt="" aria-hidden="true">
+    <img class="menu-cloud c2" src="assets/cloud.webp" alt="" aria-hidden="true">
+    <img class="menu-cloud c3" src="assets/cloud.webp" alt="" aria-hidden="true">
+    <img class="menu-cloud c4" src="assets/cloud.webp" alt="" aria-hidden="true">
     <div class="home-sky-rocket r1" aria-hidden="true"></div>
     <div class="home-sky-rocket r2" aria-hidden="true"></div>
     <div class="home-sky-rocket r3" aria-hidden="true"></div>
