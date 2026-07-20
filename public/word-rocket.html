@@ -184,8 +184,10 @@
   #start #homeRocketBalance .recharge { color:#9b4f00; text-shadow:none; font-family:'Courier New',monospace; }
   #start .info-toggle { width:48px; height:48px; padding:0; border-radius:50%; border:3px solid #fff7b4;
     background:linear-gradient(#ff78c7,#e52698); color:#fff7b4; font-family:'Luckiest Guy','Courier New',monospace;
-    font-size:0; box-shadow:0 5px 0 #8c185d, 0 10px 16px rgba(47,104,132,.22); }
-  #start .info-toggle::before { content:'?'; font-size:28px; line-height:1; text-shadow:0 2px 0 #8c185d; }
+    font-size:0; box-shadow:0 5px 0 #8c185d, 0 10px 16px rgba(47,104,132,.22);
+    display:grid; place-items:center; }
+  #start .info-toggle::before { content:'?'; display:block; font-size:28px; line-height:1;
+    transform:translateY(1px); text-shadow:0 2px 0 #8c185d; }
   #start .start-info { position:relative; z-index:3; max-width:min(560px,90vw); border:3px solid #fff7b4;
     border-radius:16px; background:rgba(255,255,255,.9); color:#5a2b00; font-weight:bold; text-shadow:none;
     box-shadow:0 6px 0 #d98010, 0 12px 18px rgba(47,104,132,.2); }
