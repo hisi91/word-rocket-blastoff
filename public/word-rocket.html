@@ -159,10 +159,9 @@
     color:#ffd527; -webkit-text-stroke:5px #64350b;
     text-shadow:0 8px 0 #9c580d, 0 14px 0 rgba(77,38,0,.28), 0 18px 22px rgba(0,70,110,.22);
     animation: logoBounce 2.6s ease-in-out infinite; }
-  .home-logo { display:grid; place-items:center; gap:0; transform:rotate(-2deg);
-    font-size:clamp(58px,12vw,118px); }
-  .home-logo .word { display:block; }
-  .home-logo .word:nth-child(2) { margin-top:-2px; transform:translateX(12%); }
+  .home-logo { position:relative; z-index:2; width:min(660px,92vw); height:auto; display:block;
+    transform:rotate(-2deg); animation:logoBounce 2.6s ease-in-out infinite;
+    filter:drop-shadow(0 14px 18px rgba(0,70,110,.22)); }
   @keyframes logoBounce { 0%,100% { transform:rotate(-2deg) translateY(0); } 50% { transform:rotate(-1deg) translateY(-6px); } }
   .home-badge-row { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; }
   #start #homeRocketBalance { min-height:auto; padding:8px 14px; border-radius:999px;
@@ -208,7 +207,7 @@
     .home-panel { min-height:min(760px,94dvh); justify-content:center; gap:clamp(12px,2.2vh,22px); padding:4vh 0; }
     .game-logo-style { -webkit-text-stroke:4px #64350b;
       text-shadow:0 6px 0 #9c580d, 0 10px 0 rgba(77,38,0,.22), 0 14px 18px rgba(0,70,110,.18); }
-    .home-logo { font-size:clamp(54px,17vw,78px); margin-bottom:clamp(6px,1.4vh,14px); }
+    .home-logo { width:min(650px,96vw); margin-bottom:clamp(6px,1.4vh,14px); }
     .home-sky-rocket.r1 { left:-18px; top:10vh; transform:rotate(13deg) scale(.78); }
     .home-sky-rocket.r2 { right:-18px; top:18vh; transform:rotate(-18deg) scale(.68); }
     .home-sky-rocket.r3 { display:none; }
@@ -225,7 +224,7 @@
   @media (max-width: 640px) and (max-height: 720px) {
     #start { justify-content:flex-start; overflow-y:auto; }
     .home-panel { min-height:auto; padding:2vh 0 18px; gap:10px; }
-    .home-logo { font-size:clamp(48px,15vw,66px); margin-bottom:4px; }
+    .home-logo { width:min(560px,94vw); margin-bottom:4px; }
     #start #startBtn { padding:12px 24px; }
   }
   .start-prompt { position:absolute; left:50%; top:38%; transform:translate(-50%,-50%);
@@ -340,10 +339,7 @@
     <div class="home-sky-rocket r2" aria-hidden="true"></div>
     <div class="home-sky-rocket r3" aria-hidden="true"></div>
     <div class="home-panel">
-      <div class="home-logo game-logo-style" aria-label="WORD ROCKET">
-        <span class="word">WORD</span>
-        <span class="word">ROCKET</span>
-      </div>
+      <img class="home-logo" src="assets/word-rocket-logo.webp" alt="WORD ROCKET">
       <div class="home-badge-row">
         <div id="homeRocketBalance" class="rocket-balance"></div>
         <button type="button" class="info-toggle" id="infoBtn">INFORMATION</button>
