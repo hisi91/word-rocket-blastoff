@@ -50,12 +50,33 @@ function UploadPage() {
     setBusy(true);
     setResults([]);
     const out: UploadResult[] = [];
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) {
+      setResults([{ name: "auth", ok: false, message: "Session expirée, reconnecte-toi." }]);
+      setBusy(false);
+      return;
+    }
+
     for (const file of files) {
       const path = `${folder}/${file.name}`;
-      const { error } = await supabase.storage
-        .from("game-icons")
-        .upload(path, file, { upsert: true, contentType: file.type || "image/webp" });
-      out.push({ name: path, ok: !error, message: error?.message });
+      try {
+        const data = new FormData();
+        data.append("folder", folder);
+        data.append("file", file);
+
+        const response = await fetch("/api/upload-icon", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: data,
+        });
+        const result = await response.json().catch(() => ({}));
+        out.push({ name: path, ok: response.ok && result.ok, message: result.error });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "network error";
+        out.push({ name: path, ok: false, message });
+      }
     }
     setResults(out);
     setBusy(false);
