@@ -129,6 +129,100 @@
   .mic-btn.on { background:#063; border-color:#0f8; color:#0f8; box-shadow:0 0 14px #0f86; }
   .mic-btn:disabled { opacity:.6; cursor:wait; }
   .req { color:#fc6; font-size:11px; margin-left:6px; }
+  #start { justify-content:center; gap:12px; overflow:hidden; padding:18px 18px 22px;
+    background:
+      radial-gradient(ellipse at 10% 20%, rgba(255,255,255,.78) 0 7%, transparent 7.5%),
+      radial-gradient(ellipse at 88% 26%, rgba(255,255,255,.64) 0 9%, transparent 9.5%),
+      radial-gradient(ellipse at 32% 78%, rgba(255,255,255,.48) 0 12%, transparent 12.5%),
+      linear-gradient(#39a9df 0%, #7ed8f3 48%, #cdf4ff 100%); }
+  #start::before, #start::after { content:''; position:absolute; pointer-events:none; z-index:0; }
+  #start::before { left:-12vw; top:13vh; width:28vw; height:8vw; min-width:150px; min-height:42px;
+    background:
+      radial-gradient(ellipse at 12% 50%, #fff 0 36%, transparent 37%),
+      radial-gradient(ellipse at 42% 38%, #fff 0 42%, transparent 43%),
+      radial-gradient(ellipse at 72% 54%, #fff 0 36%, transparent 37%);
+    opacity:.72; filter:drop-shadow(0 4px 0 rgba(24,102,132,.12)); animation: cloudDrift 18s linear infinite; }
+  #start::after { right:-16vw; bottom:9vh; width:42vw; height:12vw; min-width:210px; min-height:62px;
+    background:
+      radial-gradient(ellipse at 12% 60%, #fff 0 34%, transparent 35%),
+      radial-gradient(ellipse at 36% 42%, #fff 0 45%, transparent 46%),
+      radial-gradient(ellipse at 68% 54%, #fff 0 38%, transparent 39%),
+      radial-gradient(ellipse at 88% 62%, #fff 0 26%, transparent 27%);
+    opacity:.58; filter:drop-shadow(0 6px 0 rgba(24,102,132,.1)); animation: cloudDrift 24s linear infinite reverse; }
+  @keyframes cloudDrift { 0% { transform:translateX(0); } 50% { transform:translateX(8vw); } 100% { transform:translateX(0); } }
+  .home-sky-rocket { position:absolute; z-index:1; width:86px; height:24px; border-radius:52% 18% 18% 52%;
+    background:linear-gradient(90deg,#f7f7f7 0 52%,#d0d6dc 53% 74%,#c81920 75% 100%);
+    box-shadow:0 8px 0 rgba(56,85,103,.16); pointer-events:none; }
+  .home-sky-rocket::before { content:''; position:absolute; left:-58px; top:7px; width:62px; height:10px; border-radius:50%;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.8), rgba(170,170,170,.62)); filter:blur(1px); }
+  .home-sky-rocket::after { content:''; position:absolute; left:34px; top:-9px; width:22px; height:18px;
+    background:#c81920; clip-path:polygon(0 100%, 52% 0, 100% 100%); }
+  .home-sky-rocket.r1 { left:6vw; top:15vh; transform:rotate(15deg); animation: rocketFloatA 5s ease-in-out infinite; }
+  .home-sky-rocket.r2 { right:8vw; top:22vh; width:62px; height:18px; transform:rotate(-18deg) scale(.82); animation: rocketFloatB 6s ease-in-out infinite; }
+  .home-sky-rocket.r3 { right:18vw; bottom:21vh; width:54px; height:16px; transform:rotate(10deg) scale(.72); opacity:.85; animation: rocketFloatA 7s ease-in-out infinite reverse; }
+  @keyframes rocketFloatA { 0%,100% { translate:0 0; } 50% { translate:18px -12px; } }
+  @keyframes rocketFloatB { 0%,100% { translate:0 0; } 50% { translate:-16px 10px; } }
+  .home-panel { position:relative; z-index:2; width:min(760px,94vw); display:flex; flex-direction:column;
+    align-items:center; gap:14px; padding-top:2vh; }
+  .home-logo { position:relative; z-index:2; display:grid; place-items:center; gap:0; transform:rotate(-2deg);
+    font-family:'Luckiest Guy','Courier New',monospace; line-height:.82; letter-spacing:2px;
+    font-size:clamp(58px,12vw,118px); color:#ffd527; -webkit-text-stroke:5px #64350b;
+    text-shadow:0 8px 0 #9c580d, 0 14px 0 rgba(77,38,0,.28), 0 18px 22px rgba(0,70,110,.22);
+    animation: logoBounce 2.6s ease-in-out infinite; }
+  .home-logo .word { display:block; }
+  .home-logo .word:nth-child(2) { margin-top:-2px; transform:translateX(12%); }
+  @keyframes logoBounce { 0%,100% { transform:rotate(-2deg) translateY(0); } 50% { transform:rotate(-1deg) translateY(-6px); } }
+  .home-badge-row { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; }
+  #start #homeRocketBalance { min-height:auto; padding:8px 14px; border-radius:999px;
+    background:rgba(255,255,255,.86); color:#5a2b00; border:3px solid #ffd45a;
+    box-shadow:0 5px 0 #d98010, 0 10px 18px rgba(47,104,132,.24); font-family:'Luckiest Guy','Courier New',monospace;
+    text-shadow:none; letter-spacing:1px; }
+  #start #homeRocketBalance .rockets { letter-spacing:2px; margin-left:6px; }
+  #start #homeRocketBalance .recharge { color:#9b4f00; text-shadow:none; font-family:'Courier New',monospace; }
+  #start .info-toggle { width:48px; height:48px; padding:0; border-radius:50%; border:3px solid #fff7b4;
+    background:linear-gradient(#ff78c7,#e52698); color:#fff7b4; font-family:'Luckiest Guy','Courier New',monospace;
+    font-size:0; box-shadow:0 5px 0 #8c185d, 0 10px 16px rgba(47,104,132,.22); }
+  #start .info-toggle::before { content:'?'; font-size:28px; line-height:1; text-shadow:0 2px 0 #8c185d; }
+  #start .start-info { position:relative; z-index:3; max-width:min(560px,90vw); border:3px solid #fff7b4;
+    border-radius:16px; background:rgba(255,255,255,.9); color:#5a2b00; font-weight:bold; text-shadow:none;
+    box-shadow:0 6px 0 #d98010, 0 12px 18px rgba(47,104,132,.2); }
+  #start .loading { position:relative; z-index:2; min-height:22px; color:#0d6f8d; font-weight:bold;
+    text-shadow:0 1px 0 #fff; }
+  #start .start-options { position:relative; z-index:2; width:min(520px,92vw); gap:9px; padding:12px 14px;
+    border:3px solid rgba(255,255,255,.78); border-radius:18px; background:rgba(255,255,255,.78);
+    box-shadow:0 6px 0 rgba(61,139,165,.35), 0 12px 20px rgba(47,104,132,.18); backdrop-filter:blur(2px); }
+  #start .opt-row { color:#23475a; gap:12px; font-size:14px; font-weight:bold; }
+  #start .opt-row .hint { color:#4f7890; }
+  #start .req { color:#d36b00; }
+  #start .mic-btn { border:3px solid #ffd45a; border-radius:999px; background:linear-gradient(#ffb13b,#ff7b1a);
+    color:#fff; font-weight:bold; text-shadow:0 2px 0 #8c3900; box-shadow:0 4px 0 #b94a00; }
+  #start .mic-btn.on { background:linear-gradient(#51d26d,#18a84a); border-color:#bff7c8; color:#fff; box-shadow:0 4px 0 #0b7130; }
+  #start .toggle { background:#a5c9d7; border:2px solid #fff; box-shadow:inset 0 2px 3px rgba(0,0,0,.16); }
+  #start .toggle::after { background:#fff; box-shadow:0 2px 0 rgba(0,0,0,.12); }
+  #start .toggle:checked { background:#31bd65; }
+  #start #startBtn { position:relative; z-index:2; min-width:min(320px,86vw); border:4px solid #fff7b4; border-radius:999px;
+    padding:14px 30px; background:linear-gradient(#ffd95e,#ff982d 58%,#ff7b1a); color:#fff7b4;
+    font-family:'Luckiest Guy','Courier New',monospace; font-size:clamp(24px,5vw,34px); letter-spacing:2px;
+    text-shadow:0 3px 0 #8c3900; box-shadow:0 8px 0 #b94a00, 0 15px 20px rgba(47,104,132,.25);
+    transition:transform .12s ease, filter .12s ease; }
+  #start #startBtn:not(:disabled):hover { transform:translateY(-3px) scale(1.02); filter:saturate(1.08); }
+  #start #startBtn:not(:disabled):active { transform:translateY(4px); box-shadow:0 4px 0 #b94a00, 0 9px 14px rgba(47,104,132,.2); }
+  #start #startBtn:disabled { opacity:.62; filter:grayscale(.25); cursor:wait; }
+  #start #startBtn .ui-icon { filter:drop-shadow(0 2px 0 #8c3900); }
+  @media (max-width: 640px) {
+    #start { justify-content:flex-start; gap:9px; padding:18px 12px 16px; overflow-y:auto; }
+    .home-panel { gap:10px; padding-top:3vh; }
+    .home-logo { font-size:clamp(54px,17vw,78px); -webkit-text-stroke:4px #64350b;
+      text-shadow:0 6px 0 #9c580d, 0 10px 0 rgba(77,38,0,.22), 0 14px 18px rgba(0,70,110,.18); }
+    .home-sky-rocket.r1 { left:-18px; top:10vh; transform:rotate(13deg) scale(.78); }
+    .home-sky-rocket.r2 { right:-18px; top:18vh; transform:rotate(-18deg) scale(.68); }
+    .home-sky-rocket.r3 { display:none; }
+    #start .start-options { padding:10px 12px; gap:8px; }
+    #start .opt-row { font-size:12px; gap:9px; }
+    #start .opt-row .hint { display:none; }
+    #start .label-icon { width:18px; height:18px; vertical-align:-4px; }
+    #start .mic-btn { padding:8px 12px; font-size:12px; }
+  }
   .start-prompt { position:absolute; left:50%; top:38%; transform:translate(-50%,-50%);
     padding:14px 22px; border-radius:14px; background:rgba(0,20,30,.7);
     border:1px solid #0ff8; color:#0ff; font-size:clamp(16px,3.5vw,22px);
@@ -232,34 +326,44 @@
   <div class="start-prompt" id="startPrompt"></div>
 
   <div class="overlay" id="start">
-    <div class="title">WORD ROCKET</div>
-    <div id="homeRocketBalance" class="rocket-balance"></div>
-    <button type="button" class="info-toggle" id="infoBtn">INFORMATION</button>
-    <div class="subtitle start-info hidden" id="startInfo">Des objets tombent du ciel — devine le mot en anglais avant qu'ils ne touchent ta fusée.
-      <br>Les noms ne sont PAS affichés : à toi de reconnaître l'icône !
-      <br>5 niveaux, du sol jusqu'au cosmos.</div>
-    <div id="loadStatus" class="loading">Chargement des niveaux...</div>
-    <div class="start-options">
-      <label class="opt-row">
-        <span class="lbl"><img class="label-icon" src="ui-icons/volume.png" alt="">Prononcer le nom à l'apparition
-          <span class="hint">L'objet est lu à voix haute quand il apparaît</span>
-        </span>
-        <input type="checkbox" id="optSpeak" class="toggle" />
-      </label>
-      <label class="opt-row">
-        <span class="lbl"><img class="label-icon" src="ui-icons/menu.png" alt="">Choix multiples (QCM)
-          <span class="hint">Affiche 3 propositions à choisir</span>
-        </span>
-        <input type="checkbox" id="optText" class="toggle" />
-      </label>
-      <div class="opt-row">
-        <span class="lbl"><img class="label-icon" src="ui-icons/music.png" alt="">Activer le microphone<span class="req">requis</span>
-          <span class="hint">Nécessaire pour reconnaître ta voix</span>
-        </span>
-        <button type="button" id="optMic" class="mic-btn">Activer</button>
+    <div class="home-sky-rocket r1" aria-hidden="true"></div>
+    <div class="home-sky-rocket r2" aria-hidden="true"></div>
+    <div class="home-sky-rocket r3" aria-hidden="true"></div>
+    <div class="home-panel">
+      <div class="home-logo" aria-label="WORD ROCKET">
+        <span class="word">WORD</span>
+        <span class="word">ROCKET</span>
       </div>
+      <div class="home-badge-row">
+        <div id="homeRocketBalance" class="rocket-balance"></div>
+        <button type="button" class="info-toggle" id="infoBtn">INFORMATION</button>
+      </div>
+      <div class="subtitle start-info hidden" id="startInfo">Des objets tombent du ciel — devine le mot en anglais avant qu'ils ne touchent ta fusée.
+        <br>Les noms ne sont PAS affichés : à toi de reconnaître l'icône !
+        <br>Des niveaux courts, du sol jusqu'au cosmos.</div>
+      <div id="loadStatus" class="loading">Chargement des niveaux...</div>
+      <div class="start-options">
+        <label class="opt-row">
+          <span class="lbl"><img class="label-icon" src="ui-icons/volume.png" alt="">Prononcer le nom à l'apparition
+            <span class="hint">L'objet est lu à voix haute quand il apparaît</span>
+          </span>
+          <input type="checkbox" id="optSpeak" class="toggle" />
+        </label>
+        <label class="opt-row">
+          <span class="lbl"><img class="label-icon" src="ui-icons/menu.png" alt="">Choix multiples (QCM)
+            <span class="hint">Affiche 3 propositions à choisir</span>
+          </span>
+          <input type="checkbox" id="optText" class="toggle" />
+        </label>
+        <div class="opt-row">
+          <span class="lbl"><img class="label-icon" src="ui-icons/music.png" alt="">Activer le microphone<span class="req">requis</span>
+            <span class="hint">Nécessaire pour reconnaître ta voix</span>
+          </span>
+          <button type="button" id="optMic" class="mic-btn">Activer</button>
+        </div>
+      </div>
+      <button class="big icon-text" id="startBtn" disabled><img class="ui-icon" src="ui-icons/play.png" alt="">JOUER</button>
     </div>
-    <button class="big icon-text" id="startBtn" disabled><img class="ui-icon" src="ui-icons/play.png" alt="">START</button>
   </div>
 
   <div class="overlay hidden" id="levelSelect">
