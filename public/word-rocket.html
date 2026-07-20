@@ -763,6 +763,22 @@
     imgCache.set(path, wrap);
     return wrap;
   }
+  function loadLocalImg(path) {
+    if (!path) return null;
+    const key = `local:${path}`;
+    if (imgCache.has(key)) return imgCache.get(key);
+    const img = new Image();
+    const wrap = { complete: false, naturalWidth: 0, naturalHeight: 0, _src: null };
+    img.onload = () => {
+      wrap._src = img;
+      wrap.naturalWidth = img.naturalWidth;
+      wrap.naturalHeight = img.naturalHeight;
+      wrap.complete = true;
+    };
+    img.src = path;
+    imgCache.set(key, wrap);
+    return wrap;
+  }
 
   // Constant on-screen icon size regardless of source dimensions
   const ICON_SIZE = 96;
@@ -773,6 +789,7 @@
   const levelObjectsCache = new Map();
   let rocketImg = null;
   let flameImg = null;
+  let launchPlatformImg = null;
   let levelProgress = loadProgress();
   let rocketBalance = loadRocketBalance();
   let rocketEmptyTimer = null;
@@ -1406,7 +1423,7 @@
     ctx.drawImage(src, cx - w/2, cy - h/2, w, h);
   }
 
-  const GROUND_H = 80;
+  const PLATFORM_MAX_SIZE = 320;
   function takeoffProgress() {
     if (state.awaitingStart) return 0;
     if (!state.takeoff || !state.takeoff.active) return 1;
@@ -1416,22 +1433,18 @@
   // ease-in-out cubic
   const easeInOut = p => p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2, 3)/2;
 
-  function drawGround() {
+  function launchPlatformSize() {
+    return Math.max(230, Math.min(PLATFORM_MAX_SIZE, W * 0.58));
+  }
+
+  function drawLaunchPlatform() {
+    if (!launchPlatformImg || !launchPlatformImg.complete || !launchPlatformImg.naturalWidth) return;
     const p = takeoffProgress();
-    // Ground slides down off-screen as rocket lifts
     const eased = easeInOut(p);
-    const yTop = H - GROUND_H + eased * GROUND_H;
-    if (yTop >= H) return;
-    // grass strip
-    const g = pctx.createLinearGradient(0, yTop, 0, H);
-    g.addColorStop(0, '#86c45a'); g.addColorStop(0.4, '#5a9a3a'); g.addColorStop(1, '#3a7a2a');
-    pctx.fillStyle = g; pctx.fillRect(0, yTop, W, H - yTop);
-    // grass blades on top edge
-    pctx.strokeStyle = '#2d5a1a'; pctx.lineWidth = 2;
-    for (let x = 4; x < W; x += 10) {
-      const h = 6 + ((x*7) % 8);
-      pctx.beginPath(); pctx.moveTo(x, yTop); pctx.lineTo(x + 1, yTop - h); pctx.stroke();
-    }
+    const size = launchPlatformSize();
+    const cy = H - size * 0.07 + eased * size * 0.58;
+    if (cy - size / 2 > H) return;
+    drawImageContained(pctx, launchPlatformImg, W / 2, cy, size);
   }
 
   function drawRocket() {
@@ -1441,7 +1454,7 @@
     // During takeoff, rocket sits on ground then lifts
     const p = takeoffProgress();
     const eased = easeInOut(p);
-    const groundedY = H - GROUND_H - ROCKET_SIZE/2 + 6; // resting on grass
+    const groundedY = H - launchPlatformSize() * 0.257 - ROCKET_SIZE/2 + 10;
     r.x = W/2;
     r.y = groundedY + (normalY - groundedY) * eased;
     let sx = 0, sy = 0;
@@ -1563,7 +1576,7 @@
     pctx.clearRect(0,0,W,H);
     fctx.clearRect(0,0,W,H);
     if (state.running || state.screen === 'LEVEL_INTRO') {
-      if (state.takeoff && (state.takeoff.active || takeoffProgress() < 1)) drawGround();
+      if (state.takeoff && (state.takeoff.active || takeoffProgress() < 1)) drawLaunchPlatform();
       drawRocket();
       if (state.current) drawFalling(state.current, t);
     }
@@ -2025,6 +2038,7 @@
     LEVELS = levels.filter(l => Number.isFinite(Number(l.id)));
     rocketImg = loadImg('shared/rocket.webp');
     flameImg = loadImg('shared/flame.webp');
+    launchPlatformImg = loadLocalImg('assets/rocket-launch-platform.webp');
     const statusEl = document.getElementById('loadStatus');
 
     // Warm the first level only; selected levels still load independently.
