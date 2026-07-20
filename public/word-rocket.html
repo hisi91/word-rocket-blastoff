@@ -165,11 +165,13 @@
   @keyframes rocketFloatB { 0%,100% { translate:0 0; } 50% { translate:-16px 10px; } }
   .home-panel { position:relative; z-index:2; width:min(760px,94vw); display:flex; flex-direction:column;
     align-items:center; gap:14px; padding-top:2vh; }
-  .home-logo { position:relative; z-index:2; display:grid; place-items:center; gap:0; transform:rotate(-2deg);
+  .game-logo-style { position:relative; z-index:2;
     font-family:'Luckiest Guy','Courier New',monospace; line-height:.82; letter-spacing:2px;
-    font-size:clamp(58px,12vw,118px); color:#ffd527; -webkit-text-stroke:5px #64350b;
+    color:#ffd527; -webkit-text-stroke:5px #64350b;
     text-shadow:0 8px 0 #9c580d, 0 14px 0 rgba(77,38,0,.28), 0 18px 22px rgba(0,70,110,.22);
     animation: logoBounce 2.6s ease-in-out infinite; }
+  .home-logo { display:grid; place-items:center; gap:0; transform:rotate(-2deg);
+    font-size:clamp(58px,12vw,118px); }
   .home-logo .word { display:block; }
   .home-logo .word:nth-child(2) { margin-top:-2px; transform:translateX(12%); }
   @keyframes logoBounce { 0%,100% { transform:rotate(-2deg) translateY(0); } 50% { transform:rotate(-1deg) translateY(-6px); } }
@@ -213,8 +215,9 @@
   @media (max-width: 640px) {
     #start { justify-content:flex-start; gap:9px; padding:18px 12px 16px; overflow-y:auto; }
     .home-panel { gap:10px; padding-top:3vh; }
-    .home-logo { font-size:clamp(54px,17vw,78px); -webkit-text-stroke:4px #64350b;
+    .game-logo-style { -webkit-text-stroke:4px #64350b;
       text-shadow:0 6px 0 #9c580d, 0 10px 0 rgba(77,38,0,.22), 0 14px 18px rgba(0,70,110,.18); }
+    .home-logo { font-size:clamp(54px,17vw,78px); }
     .home-sky-rocket.r1 { left:-18px; top:10vh; transform:rotate(13deg) scale(.78); }
     .home-sky-rocket.r2 { right:-18px; top:18vh; transform:rotate(-18deg) scale(.68); }
     .home-sky-rocket.r3 { display:none; }
@@ -234,12 +237,9 @@
   @keyframes pulseStart { 0%,100% { transform:translate(-50%,-50%) scale(1); }
     50% { transform:translate(-50%,-50%) scale(1.08); } }
   #levelSelect { justify-content:flex-start; gap:12px; overflow-y:auto; }
-  #levelSelect .title { margin-top:8px; max-width:94vw; font-size:clamp(42px,8vw,72px);
-    position:relative; z-index:2;
-    background:none; color:#ef2ea7;
-    -webkit-text-fill-color:#ef2ea7; -webkit-text-stroke:4px #fff5a8;
-    text-shadow:0 7px 0 rgba(9,115,132,.45), 0 0 10px rgba(255,255,255,.5);
-    font-family:'Luckiest Guy','Courier New',monospace; letter-spacing:8px; animation:none; }
+  #levelSelect .title { margin-top:8px; max-width:94vw; font-size:clamp(38px,7.7vw,92px);
+    background:none; color:#ffd527; -webkit-text-fill-color:#ffd527; letter-spacing:4px;
+    white-space:nowrap; transform:rotate(-2deg); }
   #levelSelect .subtitle { color:#5c5c5c; text-shadow:0 1px 0 #fff8; }
   #levelRocketBalance { position:relative; z-index:2; }
   .level-home-btn { position:absolute; top:18px; left:18px; z-index:4;
@@ -279,8 +279,7 @@
     .level-home-btn { top:10px; left:10px; width:48px; height:48px; border-width:2px; }
     .level-home-btn .ui-icon { width:28px; height:28px; }
     .level-grid { width:min(308px,94vw); grid-template-columns:repeat(2,126px); gap:14px 28px; max-height:72vh; }
-    #levelSelect .title { font-size:clamp(38px,13vw,58px); letter-spacing:2px; -webkit-text-stroke:3px #fff5a8;
-      text-shadow:0 5px 0 rgba(9,115,132,.45), 0 0 8px rgba(255,255,255,.5); }
+    #levelSelect .title { font-size:clamp(34px,11.5vw,54px); letter-spacing:1px; }
   }
   .end-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
   .end-stars { display:flex; justify-content:center; align-items:center; gap:4px; min-height:72px; }
@@ -336,7 +335,7 @@
     <div class="home-sky-rocket r2" aria-hidden="true"></div>
     <div class="home-sky-rocket r3" aria-hidden="true"></div>
     <div class="home-panel">
-      <div class="home-logo" aria-label="WORD ROCKET">
+      <div class="home-logo game-logo-style" aria-label="WORD ROCKET">
         <span class="word">WORD</span>
         <span class="word">ROCKET</span>
       </div>
@@ -377,7 +376,7 @@
     <div class="home-sky-rocket r2" aria-hidden="true"></div>
     <div class="home-sky-rocket r3" aria-hidden="true"></div>
     <button type="button" id="levelHomeBtn" class="level-home-btn" title="Home" aria-label="Home"><img class="ui-icon" src="ui-icons/home.png" alt=""></button>
-    <div class="title">LEVEL SELECT</div>
+    <div class="title game-logo-style">LEVEL SELECT</div>
     <div id="levelRocketBalance" class="rocket-balance"></div>
     <div id="levelGrid" class="level-grid"></div>
   </div>
