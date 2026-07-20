@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/upload")({
@@ -39,10 +40,9 @@ function UploadPage() {
       .select("folder_name")
       .order("id")
       .then(({ data }) => {
-        if (data) setFolders(Array.from(new Set(data.map((d: any) => d.folder_name))));
+        if (data) setFolders(Array.from(new Set(data.map((d) => d.folder_name))));
       });
   }, []);
-
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
@@ -51,8 +51,8 @@ function UploadPage() {
     setResults([]);
     const out: UploadResult[] = [];
 
-    const { data: sess } = await supabase.auth.getSession();
-    const token = sess.session?.access_token;
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
     if (!token) {
       setResults([{ name: "auth", ok: false, message: "Session expirée, reconnecte-toi." }]);
       setBusy(false);
@@ -62,25 +62,26 @@ function UploadPage() {
     for (const file of files) {
       const path = `${folder}/${file.name}`;
       try {
-        const fd = new FormData();
-        fd.append("folder", folder);
-        fd.append("file", file);
-        const res = await fetch("/api/upload-icon", {
+        const data = new FormData();
+        data.append("folder", folder);
+        data.append("file", file);
+
+        const response = await fetch("/api/upload-icon", {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
-          body: fd,
+          body: data,
         });
-        const json: any = await res.json().catch(() => ({}));
-        out.push({ name: path, ok: res.ok && json.ok, message: json.error });
-      } catch (err: any) {
-        out.push({ name: path, ok: false, message: err?.message ?? "network error" });
+        const result = await response.json().catch(() => ({}));
+        out.push({ name: path, ok: response.ok && result.ok, message: result.error });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "network error";
+        out.push({ name: path, ok: false, message });
       }
     }
     setResults(out);
     setBusy(false);
     setFiles([]);
   }
-
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -115,14 +116,16 @@ function UploadPage() {
           </div>
         )}
 
-        <form onSubmit={handleUpload} className={`bg-slate-800 rounded-2xl p-5 space-y-4 ${isAdmin ? "" : "opacity-50 pointer-events-none"}`}>
-
+        <form
+          onSubmit={handleUpload}
+          className={`bg-slate-800 rounded-2xl p-5 space-y-4 ${isAdmin ? "" : "opacity-50 pointer-events-none"}`}
+        >
           <div>
             <label className="block text-sm mb-1">Dossier (folder_name du niveau)</label>
             <input
               list="folders"
               required
-              placeholder="ex: animals, fruits, space..."
+              placeholder="ex: level-21"
               value={folder}
               onChange={(e) => setFolder(e.target.value)}
               className="w-full px-3 py-2 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:border-blue-400"

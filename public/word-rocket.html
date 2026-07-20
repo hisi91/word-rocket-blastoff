@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 <title>WORD ROCKET</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: #000; color: #fff;
@@ -18,12 +21,29 @@
   .hearts { color: #ff3a6b; letter-spacing: 4px; font-size: 18px; }
   .combo { color: #ffd54a; }
   .level { color: #7cf; }
+  .rocket-stock-hud { display:inline-flex; align-items:center; gap:4px; color:#ffd54a; }
+  .rocket-stock-hud .rocket-icon { font-size:18px; line-height:1; }
+  .rocket-balance { color:#fff; font-size:16px; line-height:1.4; text-align:center; text-shadow:0 0 8px #000; }
+  .rocket-balance .rockets { display:inline-block; letter-spacing:4px; margin-left:6px; white-space:nowrap; }
+  .rocket-balance .recharge { display:block; color:#fc6; font-size:12px; margin-top:3px; letter-spacing:1px; }
+  .rocket-balance.empty { color:#fc6; }
+  .rocket-empty-modal { position:absolute; inset:0; z-index:45; display:flex; align-items:center; justify-content:center;
+    padding:24px; background:rgba(0,0,10,.52); backdrop-filter:blur(4px); }
+  .rocket-empty-modal.hidden { display:none; }
+  .rocket-empty-card { width:min(440px,92vw); border:2px solid #0ff8; border-radius:14px;
+    background:rgba(0,18,28,.94); box-shadow:0 0 28px #0ff4; padding:22px; text-align:center; }
+  .rocket-empty-title { color:#ffd54a; font-size:24px; font-weight:bold; letter-spacing:2px;
+    text-shadow:0 0 10px #000; margin-bottom:10px; }
+  .rocket-empty-text { color:#fff; font-size:15px; line-height:1.6; text-shadow:0 0 6px #000; }
+  .rocket-empty-time { color:#0ff; font-weight:bold; letter-spacing:1px; white-space:nowrap; }
+  .rocket-empty-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:18px; }
+  .rocket-empty-actions button { font-size:13px; letter-spacing:1px; }
   .bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 14px 14px 14px;
     display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 10; }
   .side-controls { position: absolute; left: 8px; top: 56px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
-  .side-controls button { padding: 6px 8px; font-size: 12px; min-width: 40px; text-align: center; }
+  .side-controls button { padding: 4px; font-size: 12px; min-width: 40px; text-align: center; }
   .top-controls { position: absolute; right: 8px; top: 56px; display: flex; flex-direction: column; gap: 6px; z-index: 20; }
-  .top-controls button { padding: 6px 10px; font-size: 14px; min-width: 40px; text-align: center; background: rgba(0,0,0,.55); border: 2px solid #0ff8; color: #0ff; border-radius: 6px; backdrop-filter: blur(4px); }
+  .top-controls button { padding: 4px; font-size: 14px; min-width: 40px; text-align: center; background: rgba(0,0,0,.55); border: 2px solid #0ff8; color: #0ff; border-radius: 6px; backdrop-filter: blur(4px); }
   .top-controls button:hover { background: rgba(0,40,60,.8); }
   #choices { display: flex; gap: 8px; justify-content: center; flex-wrap: nowrap;
     width: min(560px, calc(100vw - 28px)); margin: 0 auto; }
@@ -31,7 +51,8 @@
     background: rgba(0,20,30,.78); color: #fff; font-family: inherit; font-size: 16px;
     font-weight: bold; border-radius: 10px; letter-spacing: 1px; text-transform: uppercase;
     cursor: pointer; transition: transform .08s, background .15s, border-color .15s;
-    box-shadow: 0 0 10px #0ff3; overflow: hidden; text-overflow: ellipsis; }
+    box-shadow: 0 0 10px #0ff3; overflow: hidden; display:flex; align-items:center; justify-content:center; }
+  #choices .choice-label { display:block; max-width:100%; white-space:nowrap; line-height:1; }
   #choices button:hover { background: rgba(0,60,80,.85); transform: translateY(-2px); }
   #choices button:active { transform: translateY(1px); }
   #choices button.good { background: #063; border-color: #0f8; color: #0f8; box-shadow: 0 0 18px #0f8; }
@@ -40,6 +61,17 @@
   button { font-family: inherit; cursor: pointer; padding: 8px 14px; border-radius: 8px;
     border: 2px solid #0ff; background: rgba(0,30,40,.7); color: #0ff; font-size: 14px; }
   button.on { background: #0ff; color: #021; }
+  .ui-icon { width: 28px; height: 28px; object-fit: contain; display: inline-block; vertical-align: middle; pointer-events: none; }
+  .icon-only { width: 46px; height: 46px; display: inline-flex; align-items: center; justify-content: center; position: relative; overflow: visible; }
+  .icon-only .ui-icon { width: 38px; height: 38px; }
+  .icon-text { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+  .icon-text .ui-icon { width: 34px; height: 34px; margin-left: -8px; }
+  .text-chip { gap: 4px; color:#fff; font-size:12px; }
+  .text-chip .ui-icon { width: 30px; height: 30px; }
+  #langLabel { position:absolute; right:-5px; bottom:-4px; font-size:13px; line-height:1;
+    padding:1px 2px; border-radius:6px; background:rgba(0,0,0,.85); box-shadow:0 0 6px #0ff6; }
+  .label-icon { width:20px; height:20px; object-fit:contain; vertical-align:-5px; margin-right:6px; }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
   #spoken { min-height: 22px; font-size: 13px; color: #fff; opacity: .9; text-align: center; text-shadow: 0 0 4px #000; }
   .feedback { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%);
     font-size: 36px; font-weight: bold; opacity: 0; pointer-events: none; z-index: 20;
@@ -60,7 +92,11 @@
     color: transparent; animation: shimmer 3s linear infinite; }
   @keyframes shimmer { to { background-position: 300% 0; } }
   .subtitle { font-size: 14px; color: #bbb; max-width: 480px; line-height: 1.6; }
-  .big { padding: 14px 32px; font-size: 18px; letter-spacing: 3px; }
+  .info-toggle { padding: 8px 16px; font-size: 13px; letter-spacing: 2px; }
+  .start-info { max-width: 480px; padding: 12px 14px; border: 1px solid #0ff5; border-radius: 8px;
+    background: rgba(0,20,30,.55); }
+  .start-info.hidden { display: none; }
+  .big { padding: 12px 28px; font-size: 18px; letter-spacing: 3px; }
   .endlist { max-width: 90vw; max-height: 30vh; overflow-y: auto; padding: 10px;
     border: 1px solid #0ff8; border-radius: 8px; background: rgba(0,0,0,.4); font-size: 13px; color: #fc6; }
   .level-banner { position: absolute; inset: 0; display: flex; align-items: center;
@@ -93,6 +129,99 @@
   .mic-btn.on { background:#063; border-color:#0f8; color:#0f8; box-shadow:0 0 14px #0f86; }
   .mic-btn:disabled { opacity:.6; cursor:wait; }
   .req { color:#fc6; font-size:11px; margin-left:6px; }
+  #start, #levelSelect {
+    background:linear-gradient(#39a9df 0%, #7ed8f3 48%, #cdf4ff 100%); }
+  #start { justify-content:center; gap:12px; overflow:hidden; padding:18px 18px 22px; }
+  .menu-cloud { position:absolute; z-index:0; width:var(--cloud-w); height:auto;
+    opacity:var(--cloud-opacity,.72); pointer-events:none; filter:drop-shadow(0 8px 0 rgba(24,102,132,.08));
+    animation:cloudDrift var(--cloud-speed,24s) ease-in-out infinite; }
+  .menu-cloud.c1 { --cloud-w:min(360px,44vw); --cloud-opacity:.62; --cloud-speed:24s; left:-110px; top:12vh; }
+  .menu-cloud.c2 { --cloud-w:min(520px,54vw); --cloud-opacity:.44; --cloud-speed:30s; right:-170px; top:20vh; animation-direction:reverse; }
+  .menu-cloud.c3 { --cloud-w:min(460px,50vw); --cloud-opacity:.5; --cloud-speed:28s; left:18vw; bottom:5vh; }
+  .menu-cloud.c4 { --cloud-w:min(280px,38vw); --cloud-opacity:.42; --cloud-speed:22s; right:12vw; bottom:25vh; animation-direction:reverse; }
+  @keyframes cloudDrift { 0%,100% { transform:translateX(0) translateY(0); } 50% { transform:translateX(7vw) translateY(-1.5vh); } }
+  .home-sky-rocket { position:absolute; z-index:1; width:86px; height:24px; border-radius:52% 18% 18% 52%;
+    background:linear-gradient(90deg,#f7f7f7 0 52%,#d0d6dc 53% 74%,#c81920 75% 100%);
+    box-shadow:0 8px 0 rgba(56,85,103,.16); pointer-events:none; }
+  .home-sky-rocket::before { content:''; position:absolute; left:-58px; top:7px; width:62px; height:10px; border-radius:50%;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.8), rgba(170,170,170,.62)); filter:blur(1px); }
+  .home-sky-rocket::after { content:''; position:absolute; left:34px; top:-9px; width:22px; height:18px;
+    background:#c81920; clip-path:polygon(0 100%, 52% 0, 100% 100%); }
+  .home-sky-rocket.r1 { left:6vw; top:15vh; transform:rotate(15deg); animation: rocketFloatA 5s ease-in-out infinite; }
+  .home-sky-rocket.r2 { right:8vw; top:22vh; width:62px; height:18px; transform:rotate(-18deg) scale(.82); animation: rocketFloatB 6s ease-in-out infinite; }
+  .home-sky-rocket.r3 { right:18vw; bottom:21vh; width:54px; height:16px; transform:rotate(10deg) scale(.72); opacity:.85; animation: rocketFloatA 7s ease-in-out infinite reverse; }
+  @keyframes rocketFloatA { 0%,100% { translate:0 0; } 50% { translate:18px -12px; } }
+  @keyframes rocketFloatB { 0%,100% { translate:0 0; } 50% { translate:-16px 10px; } }
+  .home-panel { position:relative; z-index:2; width:min(760px,94vw); display:flex; flex-direction:column;
+    align-items:center; gap:14px; padding-top:2vh; }
+  .game-logo-style { position:relative; z-index:2;
+    font-family:'Luckiest Guy','Courier New',monospace; line-height:.82; letter-spacing:2px;
+    color:#ffd527; -webkit-text-stroke:5px #64350b;
+    text-shadow:0 8px 0 #9c580d, 0 14px 0 rgba(77,38,0,.28), 0 18px 22px rgba(0,70,110,.22);
+    animation: logoBounce 2.6s ease-in-out infinite; }
+  .home-logo { display:grid; place-items:center; gap:0; transform:rotate(-2deg);
+    font-size:clamp(58px,12vw,118px); }
+  .home-logo .word { display:block; }
+  .home-logo .word:nth-child(2) { margin-top:-2px; transform:translateX(12%); }
+  @keyframes logoBounce { 0%,100% { transform:rotate(-2deg) translateY(0); } 50% { transform:rotate(-1deg) translateY(-6px); } }
+  .home-badge-row { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; }
+  #start #homeRocketBalance { min-height:auto; padding:8px 14px; border-radius:999px;
+    background:rgba(255,255,255,.86); color:#5a2b00; border:3px solid #ffd45a;
+    box-shadow:0 5px 0 #d98010, 0 10px 18px rgba(47,104,132,.24); font-family:'Luckiest Guy','Courier New',monospace;
+    text-shadow:none; letter-spacing:1px; }
+  #start #homeRocketBalance .rockets { letter-spacing:2px; margin-left:6px; }
+  #start #homeRocketBalance .recharge { color:#9b4f00; text-shadow:none; font-family:'Courier New',monospace; }
+  #start .info-toggle { width:48px; height:48px; padding:0; border-radius:50%; border:3px solid #fff7b4;
+    background:linear-gradient(#ff78c7,#e52698); color:#fff7b4; font-family:'Luckiest Guy','Courier New',monospace;
+    font-size:0; box-shadow:0 5px 0 #8c185d, 0 10px 16px rgba(47,104,132,.22);
+    display:grid; place-items:center; }
+  #start .info-toggle::before { content:'?'; display:block; font-size:28px; line-height:1;
+    transform:translateY(1px); text-shadow:0 2px 0 #8c185d; }
+  #start .start-info { position:relative; z-index:3; max-width:min(560px,90vw); border:3px solid #fff7b4;
+    border-radius:16px; background:rgba(255,255,255,.9); color:#5a2b00; font-weight:bold; text-shadow:none;
+    box-shadow:0 6px 0 #d98010, 0 12px 18px rgba(47,104,132,.2); }
+  #start .loading { position:relative; z-index:2; min-height:22px; color:#0d6f8d; font-weight:bold;
+    text-shadow:0 1px 0 #fff; }
+  #start .start-options { position:relative; z-index:2; width:min(520px,92vw); gap:9px; padding:12px 14px;
+    border:3px solid rgba(255,255,255,.78); border-radius:18px; background:rgba(255,255,255,.78);
+    box-shadow:0 6px 0 rgba(61,139,165,.35), 0 12px 20px rgba(47,104,132,.18); backdrop-filter:blur(2px); }
+  #start .opt-row { color:#23475a; gap:12px; font-size:14px; font-weight:bold; }
+  #start .opt-row .hint { color:#4f7890; }
+  #start .req { color:#d36b00; }
+  #start .mic-btn { border:3px solid #ffd45a; border-radius:999px; background:linear-gradient(#ffb13b,#ff7b1a);
+    color:#fff; font-weight:bold; text-shadow:0 2px 0 #8c3900; box-shadow:0 4px 0 #b94a00; }
+  #start .mic-btn.on { background:linear-gradient(#51d26d,#18a84a); border-color:#bff7c8; color:#fff; box-shadow:0 4px 0 #0b7130; }
+  #start .toggle { background:#a5c9d7; border:2px solid #fff; box-shadow:inset 0 2px 3px rgba(0,0,0,.16); }
+  #start .toggle::after { background:#fff; box-shadow:0 2px 0 rgba(0,0,0,.12); }
+  #start .toggle:checked { background:#31bd65; }
+  #start #startBtn { position:relative; z-index:2; min-width:min(320px,86vw); border:4px solid #fff7b4; border-radius:999px;
+    padding:14px 30px; background:linear-gradient(#ffd95e,#ff982d 58%,#ff7b1a); color:#fff7b4;
+    font-family:'Luckiest Guy','Courier New',monospace; font-size:clamp(24px,5vw,34px); letter-spacing:2px;
+    text-shadow:0 3px 0 #8c3900; box-shadow:0 8px 0 #b94a00, 0 15px 20px rgba(47,104,132,.25);
+    transition:transform .12s ease, filter .12s ease; }
+  #start #startBtn:not(:disabled):hover { transform:translateY(-3px) scale(1.02); filter:saturate(1.08); }
+  #start #startBtn:not(:disabled):active { transform:translateY(4px); box-shadow:0 4px 0 #b94a00, 0 9px 14px rgba(47,104,132,.2); }
+  #start #startBtn:disabled { opacity:.62; filter:grayscale(.25); cursor:wait; }
+  #start #startBtn .ui-icon { filter:drop-shadow(0 2px 0 #8c3900); }
+  @media (max-width: 640px) {
+    #start { justify-content:flex-start; gap:9px; padding:18px 12px 16px; overflow-y:auto; }
+    .home-panel { gap:10px; padding-top:3vh; }
+    .game-logo-style { -webkit-text-stroke:4px #64350b;
+      text-shadow:0 6px 0 #9c580d, 0 10px 0 rgba(77,38,0,.22), 0 14px 18px rgba(0,70,110,.18); }
+    .home-logo { font-size:clamp(54px,17vw,78px); }
+    .home-sky-rocket.r1 { left:-18px; top:10vh; transform:rotate(13deg) scale(.78); }
+    .home-sky-rocket.r2 { right:-18px; top:18vh; transform:rotate(-18deg) scale(.68); }
+    .home-sky-rocket.r3 { display:none; }
+    .menu-cloud.c1 { --cloud-w:250px; left:-120px; top:14vh; }
+    .menu-cloud.c2 { --cloud-w:330px; right:-180px; top:30vh; }
+    .menu-cloud.c3 { --cloud-w:320px; left:-70px; bottom:4vh; }
+    .menu-cloud.c4 { --cloud-w:210px; right:-80px; bottom:22vh; }
+    #start .start-options { padding:10px 12px; gap:8px; }
+    #start .opt-row { font-size:12px; gap:9px; }
+    #start .opt-row .hint { display:none; }
+    #start .label-icon { width:18px; height:18px; vertical-align:-4px; }
+    #start .mic-btn { padding:8px 12px; font-size:12px; }
+  }
   .start-prompt { position:absolute; left:50%; top:38%; transform:translate(-50%,-50%);
     padding:14px 22px; border-radius:14px; background:rgba(0,20,30,.7);
     border:1px solid #0ff8; color:#0ff; font-size:clamp(16px,3.5vw,22px);
@@ -102,6 +231,60 @@
   .start-prompt.show { opacity:1; animation: pulseStart 1.6s ease-in-out infinite; }
   @keyframes pulseStart { 0%,100% { transform:translate(-50%,-50%) scale(1); }
     50% { transform:translate(-50%,-50%) scale(1.08); } }
+  #levelSelect { justify-content:flex-start; gap:12px; overflow-y:auto; }
+  #levelSelect .title { margin-top:8px; max-width:94vw; font-size:clamp(38px,7.7vw,92px);
+    background:none; color:#ffd527; -webkit-text-fill-color:#ffd527; letter-spacing:4px;
+    white-space:nowrap; transform:rotate(-2deg); }
+  #levelSelect .subtitle { color:#5c5c5c; text-shadow:0 1px 0 #fff8; }
+  #levelRocketBalance { position:relative; z-index:2; }
+  .level-home-btn { position:absolute; top:18px; left:18px; z-index:4;
+    width:58px; height:58px; padding:0; border:0; border-radius:0;
+    background:transparent; box-shadow:none; display:grid; place-items:center;
+    cursor:pointer; transition:transform .14s ease, filter .14s ease; }
+  .level-home-btn:hover { transform:scale(1.06); }
+  .level-home-btn .ui-icon { width:50px; height:50px; filter:drop-shadow(0 5px 0 rgba(9,115,132,.28)); }
+  .level-grid { position:relative; z-index:2; width:min(672px,94vw); max-height:72vh; overflow-y:auto; display:grid;
+    grid-template-columns:repeat(4,126px); justify-content:center; gap:14px 36px; padding:20px 10px 28px; }
+  .level-card { position:relative; min-height:174px; display:flex; align-items:flex-end;
+    justify-content:center; padding:0; border:0; background:transparent; box-shadow:none;
+    color:#3d1a00; cursor:pointer; transition:transform .14s ease; overflow:visible; }
+  .level-card.unlocked:hover { transform:scale(1.05); }
+  .level-card.locked { cursor:pointer; opacity:.92; }
+  .level-card.shake { animation: levelShake .34s ease; }
+  @keyframes levelShake {
+    0%,100% { transform:translateX(0); }
+    20% { transform:translateX(-7px) rotate(-2deg); }
+    40% { transform:translateX(7px) rotate(2deg); }
+    60% { transform:translateX(-5px) rotate(-1deg); }
+    80% { transform:translateX(5px) rotate(1deg); }
+  }
+  .level-frame { position:relative; width:126px; aspect-ratio:1; display:grid;
+    place-items:center; background:url('assets/cadre.png') center 76% / auto 184px no-repeat; }
+  .level-number { font-family:'Luckiest Guy','Courier New',monospace; font-size:50px;
+    color:#3d1a00; line-height:1; -webkit-text-stroke:2px #f6cf51;
+    text-shadow:0 3px 0 #f6cf51, 0 5px 0 rgba(83,34,0,.18); transform:translateY(5px); }
+  .level-lock { width:80%; height:80%; object-fit:contain; transform:translateY(3px);
+    filter:drop-shadow(0 4px 0 rgba(83,34,0,.22)); }
+  .level-stars { position:absolute; top:0; left:50%; transform:translateX(-50%);
+    display:flex; justify-content:center; gap:0; min-height:58px; z-index:2; pointer-events:none; }
+  .level-star { width:58px; height:58px; object-fit:contain; margin:0 -6px;
+    filter:drop-shadow(0 3px 0 rgba(130,76,0,.28)); }
+  @media (max-width: 640px) {
+    #levelSelect { gap:8px; padding:14px 12px 18px; }
+    .level-home-btn { top:10px; left:10px; width:48px; height:48px; }
+    .level-home-btn .ui-icon { width:42px; height:42px; }
+    .level-grid { width:min(308px,94vw); grid-template-columns:repeat(2,126px); gap:14px 28px; max-height:72vh; }
+    #levelSelect .title { font-size:clamp(34px,11.5vw,54px); letter-spacing:1px; }
+  }
+  .end-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
+  .end-stars { display:flex; justify-content:center; align-items:center; gap:4px; min-height:72px; }
+  .end-stars.hidden { display:none; }
+  .end-star { width:72px; height:72px; object-fit:contain;
+    filter:drop-shadow(0 4px 0 rgba(130,76,0,.28)); }
+  @media (max-width: 640px) {
+    .end-stars { min-height:60px; }
+    .end-star { width:60px; height:60px; }
+  }
 </style>
 </head>
 <body>
@@ -113,6 +296,7 @@
   <div class="hud">
     <div class="score">SCORE <span id="score">0</span></div>
     <div class="level">LVL <span id="lvl">1</span></div>
+    <div class="rocket-stock-hud"><span id="rocketStockCount">5</span><span class="rocket-icon" aria-hidden="true">🚀</span></div>
     <div class="combo">x<span id="mult">1</span> <span id="combo">0</span></div>
     <div class="hearts" id="hearts">♥♥♥</div>
   </div>
@@ -122,14 +306,14 @@
     <div id="choices"></div>
   </div>
   <div class="top-controls" id="topControls" style="display:none">
-    <button id="pauseBtn" title="Pause">⏸</button>
-    <button id="restartBtn" title="Restart">↻</button>
-    <button id="homeBtn" title="Home">🏠</button>
+    <button id="pauseBtn" class="icon-only" title="Pause" aria-label="Pause"><img class="ui-icon" src="ui-icons/pause.png" alt=""></button>
+    <button id="restartBtn" class="icon-only" title="Restart" aria-label="Restart"><img class="ui-icon" src="ui-icons/undo.png" alt=""></button>
+    <button id="homeBtn" class="icon-only" title="Home" aria-label="Home"><img class="ui-icon" src="ui-icons/home.png" alt=""></button>
   </div>
   <div class="side-controls">
-    <button id="mic">🎤</button>
-    <button id="lang">🇬🇧</button>
-    <button id="mute">🔊</button>
+    <button id="mic" class="icon-only" title="Micro" aria-label="Micro"><img class="ui-icon" src="ui-icons/music.png" alt=""><span id="micLabel" class="sr-only">Micro</span></button>
+    <button id="lang" class="icon-only text-chip" title="Language" aria-label="Language"><img class="ui-icon" src="ui-icons/help.png" alt=""><span id="langLabel">🇬🇧</span></button>
+    <button id="mute" class="icon-only" title="Sound" aria-label="Sound"><img class="ui-icon" src="ui-icons/volume.png" alt=""></button>
   </div>
 
   <div class="feedback" id="feedback"></div>
@@ -142,40 +326,89 @@
   <div class="start-prompt" id="startPrompt"></div>
 
   <div class="overlay" id="start">
-    <div class="title">WORD ROCKET</div>
-    <div class="subtitle">Des objets tombent du ciel — devine le mot en anglais avant qu'ils ne touchent ta fusée.
-      <br>Les noms ne sont PAS affichés : à toi de reconnaître l'icône !
-      <br>5 niveaux, du sol jusqu'au cosmos.</div>
-    <div id="loadStatus" class="loading">Chargement des niveaux...</div>
-    <div class="start-options">
-      <label class="opt-row">
-        <span class="lbl">🔊 Prononcer le nom à l'apparition
-          <span class="hint">L'objet est lu à voix haute quand il apparaît</span>
-        </span>
-        <input type="checkbox" id="optSpeak" class="toggle" />
-      </label>
-      <label class="opt-row">
-        <span class="lbl">🔤 Choix multiples (QCM)
-          <span class="hint">Affiche 3 propositions à choisir</span>
-        </span>
-        <input type="checkbox" id="optText" class="toggle" />
-      </label>
-      <div class="opt-row">
-        <span class="lbl">🎤 Activer le microphone<span class="req">requis</span>
-          <span class="hint">Nécessaire pour reconnaître ta voix</span>
-        </span>
-        <button type="button" id="optMic" class="mic-btn">Activer</button>
+    <img class="menu-cloud c1" src="assets/cloud.webp" alt="" aria-hidden="true">
+    <img class="menu-cloud c2" src="assets/cloud.webp" alt="" aria-hidden="true">
+    <img class="menu-cloud c3" src="assets/cloud.webp" alt="" aria-hidden="true">
+    <img class="menu-cloud c4" src="assets/cloud.webp" alt="" aria-hidden="true">
+    <div class="home-sky-rocket r1" aria-hidden="true"></div>
+    <div class="home-sky-rocket r2" aria-hidden="true"></div>
+    <div class="home-sky-rocket r3" aria-hidden="true"></div>
+    <div class="home-panel">
+      <div class="home-logo game-logo-style" aria-label="WORD ROCKET">
+        <span class="word">WORD</span>
+        <span class="word">ROCKET</span>
       </div>
+      <div class="home-badge-row">
+        <div id="homeRocketBalance" class="rocket-balance"></div>
+        <button type="button" class="info-toggle" id="infoBtn">INFORMATION</button>
+      </div>
+      <div class="subtitle start-info hidden" id="startInfo">Des objets tombent du ciel — devine le mot en anglais avant qu'ils ne touchent ta fusée.
+        <br>Les noms ne sont PAS affichés : à toi de reconnaître l'icône !
+        <br>Des niveaux courts, du sol jusqu'au cosmos.</div>
+      <div id="loadStatus" class="loading">Chargement des niveaux...</div>
+      <div class="start-options">
+        <label class="opt-row">
+          <span class="lbl"><img class="label-icon" src="ui-icons/volume.png" alt="">Prononcer le nom à l'apparition
+            <span class="hint">L'objet est lu à voix haute quand il apparaît</span>
+          </span>
+          <input type="checkbox" id="optSpeak" class="toggle" />
+        </label>
+        <label class="opt-row">
+          <span class="lbl"><img class="label-icon" src="ui-icons/menu.png" alt="">Choix multiples (QCM)
+            <span class="hint">Affiche 3 propositions à choisir</span>
+          </span>
+          <input type="checkbox" id="optText" class="toggle" />
+        </label>
+        <div class="opt-row">
+          <span class="lbl"><img class="label-icon" src="ui-icons/music.png" alt="">Activer le microphone<span class="req">requis</span>
+            <span class="hint">Nécessaire pour reconnaître ta voix</span>
+          </span>
+          <button type="button" id="optMic" class="mic-btn">Activer</button>
+        </div>
+      </div>
+      <button class="big icon-text" id="startBtn" disabled><img class="ui-icon" src="ui-icons/play.png" alt="">JOUER</button>
     </div>
-    <button class="big" id="startBtn" disabled>START</button>
-    <div class="subtitle">Cliquez ou appuyez sur ESPACE</div>
+  </div>
+
+  <div class="overlay hidden" id="levelSelect">
+    <img class="menu-cloud c1" src="assets/cloud.webp" alt="" aria-hidden="true">
+    <img class="menu-cloud c2" src="assets/cloud.webp" alt="" aria-hidden="true">
+    <img class="menu-cloud c3" src="assets/cloud.webp" alt="" aria-hidden="true">
+    <img class="menu-cloud c4" src="assets/cloud.webp" alt="" aria-hidden="true">
+    <div class="home-sky-rocket r1" aria-hidden="true"></div>
+    <div class="home-sky-rocket r2" aria-hidden="true"></div>
+    <div class="home-sky-rocket r3" aria-hidden="true"></div>
+    <button type="button" id="levelHomeBtn" class="level-home-btn" title="Home" aria-label="Home"><img class="ui-icon" src="ui-icons/home.png" alt=""></button>
+    <div class="title game-logo-style">LEVEL SELECT</div>
+    <div id="levelRocketBalance" class="rocket-balance"></div>
+    <div id="levelGrid" class="level-grid"></div>
   </div>
 
   <div class="overlay hidden" id="end">
     <div class="title" id="endTitle" style="font-size: clamp(32px,7vw,60px)">GAME OVER</div>
+    <div id="endStars" class="end-stars hidden" aria-label="Étoiles gagnées"></div>
     <div id="endStats" style="font-size:18px;line-height:1.8"></div>
     <div id="missed" class="endlist"></div>
-    <button class="big" id="replayBtn">REJOUER</button>
+    <div class="end-actions">
+      <button class="big icon-text" id="retryBtn"><img class="ui-icon" src="ui-icons/undo.png" alt="">RETRY</button>
+      <button class="big icon-text" id="nextLevelBtn"><img class="ui-icon" src="ui-icons/right.png" alt="">NEXT LEVEL</button>
+      <button class="big icon-text" id="levelSelectBtn"><img class="ui-icon" src="ui-icons/menu.png" alt="">LEVEL SELECT</button>
+    </div>
+  </div>
+
+  <div class="rocket-empty-modal hidden" id="rocketEmptyModal" role="dialog" aria-modal="true" aria-labelledby="rocketEmptyTitle">
+    <div class="rocket-empty-card">
+      <div class="rocket-empty-title" id="rocketEmptyTitle">PLUS DE ROCKETS 🚀</div>
+      <div class="rocket-empty-text" id="rocketEmptyText">
+        Il ne reste plus de rockets. Prochaine rocket dans
+        <span class="rocket-empty-time" id="rocketRechargeTimer">--:--</span>.
+      </div>
+      <div class="rocket-empty-actions">
+        <button type="button" id="shareRocketBtn">Partager le jeu</button>
+        <button type="button" id="buyRocketBtn">Acheter des rockets</button>
+        <button type="button" id="closeRocketEmptyBtn">OK</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -191,8 +424,19 @@
   };
   
   const LEVELS_CACHE_KEY = 'wr_levels_v8';
+  const LEVEL_OBJECTS_CACHE_KEY = 'wr_level_objects_v1';
+  const PROGRESS_KEY = 'wr_level_progress_v1';
+  const ROCKET_BALANCE_KEY = 'wr_rocket_balance_v1';
+  const MAX_ROCKET_BALANCE = 5;
+  const ROCKET_REGEN_MS = 60 * 60 * 1000;
   const LEVELS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
   const LEVELS_FETCH_TIMEOUT = 3500;
+  function objectsForLevel(levelNumber) {
+    const level = Math.max(1, Number(levelNumber) || 1);
+    if (level <= 5) return 5 + (level - 1);
+    if (level <= 20) return 9 + Math.ceil((level - 5) / 2);
+    return 17 + Math.ceil((level - 20) / 5);
+  }
   const DEFAULT_LEVELS = [
     { id: 1, name: 'GROUND', total_objects: 5, folder_name: 'level-1', background_theme: 'meadow', fall_duration: 6, level_objects: [
       { word: 'house', icon_path: 'level-1/house.webp' }, { word: 'tree', icon_path: 'level-1/tree.webp' }, { word: 'leaf', icon_path: 'level-1/leaf.webp' }, { word: 'bird', icon_path: 'level-1/bird.webp' }, { word: 'dog', icon_path: 'level-1/dog.webp' },
@@ -238,13 +482,55 @@
   async function refreshLevelsCache() {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), LEVELS_FETCH_TIMEOUT);
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/levels?select=id,name,total_objects,folder_name,background_theme,fall_duration,level_objects(word,icon_path)&id=lte.50&order=id.asc`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/levels?select=id,name,total_objects,folder_name,background_theme,fall_duration&id=lte.50&order=id.asc`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
       signal: controller.signal,
     }).finally(() => clearTimeout(timeout));
     if (!r.ok) throw new Error("Failed to load levels");
     const data = await r.json();
     try { localStorage.setItem(LEVELS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch {}
+    return data;
+  }
+
+  function defaultObjectsForLevel(levelId) {
+    return DEFAULT_LEVELS.find(l => Number(l.id) === Number(levelId))?.level_objects || [];
+  }
+
+  function getCachedLevelObjects(levelId) {
+    try {
+      const raw = localStorage.getItem(`${LEVEL_OBJECTS_CACHE_KEY}_${levelId}`);
+      if (!raw) return null;
+      const { ts, data } = JSON.parse(raw);
+      if (Date.now() - ts < LEVELS_CACHE_TTL && Array.isArray(data) && data.length) return data;
+    } catch {}
+    return null;
+  }
+
+  async function fetchLevelObjects(levelId) {
+    const cached = getCachedLevelObjects(levelId);
+    if (cached) {
+      refreshLevelObjectsCache(levelId).catch(() => {});
+      return cached;
+    }
+    try {
+      return await refreshLevelObjectsCache(levelId);
+    } catch {
+      const fallback = defaultObjectsForLevel(levelId);
+      if (fallback.length) return fallback;
+      throw new Error("Failed to load level objects");
+    }
+  }
+
+  async function refreshLevelObjectsCache(levelId) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), LEVELS_FETCH_TIMEOUT);
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/level_objects?select=word,icon_path&level_id=eq.${levelId}&order=created_at.asc`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout));
+    if (!r.ok) throw new Error("Failed to load level objects");
+    const data = await r.json();
+    try { localStorage.setItem(`${LEVEL_OBJECTS_CACHE_KEY}_${levelId}`, JSON.stringify({ ts: Date.now(), data })); } catch {}
     return data;
   }
 
@@ -488,6 +774,22 @@
     imgCache.set(path, wrap);
     return wrap;
   }
+  function loadLocalImg(path) {
+    if (!path) return null;
+    const key = `local:${path}`;
+    if (imgCache.has(key)) return imgCache.get(key);
+    const img = new Image();
+    const wrap = { complete: false, naturalWidth: 0, naturalHeight: 0, _src: null };
+    img.onload = () => {
+      wrap._src = img;
+      wrap.naturalWidth = img.naturalWidth;
+      wrap.naturalHeight = img.naturalHeight;
+      wrap.complete = true;
+    };
+    img.src = path;
+    imgCache.set(key, wrap);
+    return wrap;
+  }
 
   // Constant on-screen icon size regardless of source dimensions
   const ICON_SIZE = 96;
@@ -495,15 +797,233 @@
 
   // ===== Game state =====
   let LEVELS = [];
+  const levelObjectsCache = new Map();
   let rocketImg = null;
   let flameImg = null;
+  let launchPlatformImg = null;
+  let levelProgress = loadProgress();
+  let rocketBalance = loadRocketBalance();
+  let rocketEmptyTimer = null;
   const state = {
-    running: false, paused: false, awaitingStart: false, levelIdx: 0, score: 0, lives: 3, combo: 0,
-    queue: [], current: null, missed: [], correct: 0, attempted: 0,
+    screen: 'START', running: false, paused: false, awaitingStart: false, levelIdx: 0, score: 0, lives: 3, combo: 0,
+    queue: [], current: null, missed: [], correct: 0, attempted: 0, totalObjects: 0,
     rocket: { x: 0, y: 0, shake: 0, exploding: 0 },
     takeoff: { active: false, t0: 0, duration: 2600 },
   };
   const particles = [];
+  let wakeLock = null, wakeLockRequesting = false;
+
+  function shouldKeepScreenAwake() {
+    return (state.screen === 'LEVEL_INTRO' || state.screen === 'PLAYING') && !state.paused;
+  }
+
+  async function requestScreenWakeLock() {
+    if (!('wakeLock' in navigator) || wakeLock || wakeLockRequesting || !shouldKeepScreenAwake() || document.hidden) return;
+    wakeLockRequesting = true;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (err) {
+      console.warn('[wake-lock]', err?.message || err);
+    } finally {
+      wakeLockRequesting = false;
+    }
+  }
+
+  async function releaseScreenWakeLock() {
+    if (!wakeLock) return;
+    const lock = wakeLock;
+    wakeLock = null;
+    try { await lock.release(); } catch (_) {}
+  }
+
+  function syncScreenWakeLock() {
+    if (shouldKeepScreenAwake()) {
+      void requestScreenWakeLock();
+    } else {
+      void releaseScreenWakeLock();
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      wakeLock = null;
+      wakeLockRequesting = false;
+      return;
+    }
+    syncScreenWakeLock();
+  });
+
+  function loadProgress() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}');
+      return {
+        unlocked: Math.max(1, Number(saved.unlocked) || 1),
+        stars: saved.stars && typeof saved.stars === 'object' ? saved.stars : {},
+      };
+    } catch {
+      return { unlocked: 1, stars: {} };
+    }
+  }
+
+  function saveProgress() {
+    try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(levelProgress)); } catch {}
+  }
+
+  function normalizeRocketBalance(raw) {
+    const now = Date.now();
+    const rawCount = Number(raw?.count);
+    const current = Number.isFinite(rawCount) ? Math.max(0, Math.min(MAX_ROCKET_BALANCE, rawCount)) : MAX_ROCKET_BALANCE;
+    const rawUpdatedAt = Number(raw?.updatedAt);
+    const updatedAt = Number.isFinite(rawUpdatedAt) ? rawUpdatedAt : now;
+    if (current >= MAX_ROCKET_BALANCE) return { count: MAX_ROCKET_BALANCE, updatedAt: now };
+    const earned = Math.max(0, Math.floor((now - updatedAt) / ROCKET_REGEN_MS));
+    const count = Math.min(MAX_ROCKET_BALANCE, current + earned);
+    const nextUpdatedAt = count >= MAX_ROCKET_BALANCE ? now : updatedAt + earned * ROCKET_REGEN_MS;
+    return { count, updatedAt: nextUpdatedAt || now };
+  }
+
+  function loadRocketBalance() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(ROCKET_BALANCE_KEY) || 'null');
+      return normalizeRocketBalance(saved || { count: MAX_ROCKET_BALANCE, updatedAt: Date.now() });
+    } catch {
+      return { count: MAX_ROCKET_BALANCE, updatedAt: Date.now() };
+    }
+  }
+
+  function saveRocketBalance() {
+    try { localStorage.setItem(ROCKET_BALANCE_KEY, JSON.stringify(rocketBalance)); } catch {}
+  }
+
+  function refreshRocketBalance() {
+    rocketBalance = normalizeRocketBalance(rocketBalance);
+    saveRocketBalance();
+    updateRocketBalanceUI();
+  }
+
+  function nextRocketMinutes() {
+    if (rocketBalance.count >= MAX_ROCKET_BALANCE) return 0;
+    const elapsed = Date.now() - rocketBalance.updatedAt;
+    return Math.max(1, Math.ceil((ROCKET_REGEN_MS - elapsed) / 60000));
+  }
+
+  function nextRocketRemainingMs() {
+    if (rocketBalance.count >= MAX_ROCKET_BALANCE) return 0;
+    const elapsed = Date.now() - rocketBalance.updatedAt;
+    return Math.max(0, ROCKET_REGEN_MS - elapsed);
+  }
+
+  function formatRocketWait(ms) {
+    const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  function rocketBalanceText() {
+    const rockets = rocketBalance.count > 0 ? '🚀'.repeat(rocketBalance.count) : '0 rocket';
+    const recharge = rocketBalance.count < MAX_ROCKET_BALANCE
+      ? `<span class="recharge">+1 rocket dans ${nextRocketMinutes()} min</span>`
+      : '';
+    return `Votre solde actuel: <span class="rockets">${rockets}</span>${recharge}`;
+  }
+
+  function updateRocketEmptyModal() {
+    const modal = document.getElementById('rocketEmptyModal');
+    if (!modal || modal.classList.contains('hidden')) return;
+    refreshRocketBalance();
+    const timer = document.getElementById('rocketRechargeTimer');
+    if (timer) timer.textContent = formatRocketWait(nextRocketRemainingMs());
+    if (rocketBalance.count > 0) hideRocketEmptyMessage();
+  }
+
+  function showRocketEmptyMessage() {
+    refreshRocketBalance();
+    const modal = document.getElementById('rocketEmptyModal');
+    const text = document.getElementById('rocketEmptyText');
+    const timer = document.getElementById('rocketRechargeTimer');
+    if (!modal || !text || !timer) return;
+    text.innerHTML = `Il ne reste plus de rockets. Prochaine rocket dans <span class="rocket-empty-time" id="rocketRechargeTimer">${formatRocketWait(nextRocketRemainingMs())}</span>.`;
+    modal.classList.remove('hidden');
+    clearInterval(rocketEmptyTimer);
+    rocketEmptyTimer = setInterval(updateRocketEmptyModal, 1000);
+  }
+
+  function hideRocketEmptyMessage() {
+    const modal = document.getElementById('rocketEmptyModal');
+    if (modal) modal.classList.add('hidden');
+    clearInterval(rocketEmptyTimer);
+    rocketEmptyTimer = null;
+  }
+
+  function showRocketEmptyPlaceholder(kind) {
+    const text = document.getElementById('rocketEmptyText');
+    if (!text) return;
+    const label = kind === 'share' ? 'Le partage du jeu arrive bientôt.' : 'L’achat de rockets arrive bientôt.';
+    text.innerHTML = `${label}<br>Prochaine rocket gratuite dans <span class="rocket-empty-time" id="rocketRechargeTimer">${formatRocketWait(nextRocketRemainingMs())}</span>.`;
+  }
+
+  function updateRocketBalanceUI() {
+    const home = document.getElementById('homeRocketBalance');
+    const select = document.getElementById('levelRocketBalance');
+    [home, select].forEach(el => {
+      if (!el) return;
+      el.innerHTML = rocketBalanceText();
+      el.classList.toggle('empty', rocketBalance.count <= 0);
+    });
+    const hud = document.getElementById('rocketStockCount');
+    if (hud) hud.textContent = rocketBalance.count;
+  }
+
+  function spendRocketOnFail() {
+    refreshRocketBalance();
+    if (rocketBalance.count <= 0) return;
+    const updatedAt = rocketBalance.count >= MAX_ROCKET_BALANCE ? Date.now() : rocketBalance.updatedAt;
+    rocketBalance = { count: rocketBalance.count - 1, updatedAt };
+    saveRocketBalance();
+    updateRocketBalanceUI();
+  }
+
+  function canStartLevel() {
+    refreshRocketBalance();
+    if (rocketBalance.count > 0) return true;
+    updateRocketBalanceUI();
+    showRocketEmptyMessage();
+    return false;
+  }
+
+  function starsForMistakes(mistakes) {
+    if (mistakes <= 0) return 3;
+    if (mistakes === 1) return 2;
+    if (mistakes === 2) return 1;
+    return 0;
+  }
+
+  function recordLevelWin() {
+    const levelNumber = state.levelIdx + 1;
+    const earnedStars = starsForMistakes(state.missed.length);
+    const currentStars = Number(levelProgress.stars[levelNumber]) || 0;
+    levelProgress.stars[levelNumber] = Math.max(currentStars, earnedStars);
+    levelProgress.unlocked = Math.max(levelProgress.unlocked, Math.min(LEVELS.length, levelNumber + 1));
+    saveProgress();
+  }
+
+  function renderEndStars(won) {
+    const starsEl = document.getElementById('endStars');
+    if (!starsEl) return;
+    if (!won) {
+      starsEl.classList.add('hidden');
+      starsEl.innerHTML = '';
+      return;
+    }
+    const earnedStars = starsForMistakes(state.missed.length);
+    starsEl.innerHTML = Array.from({ length: earnedStars }, () =>
+      '<img class="end-star" src="assets/star.png" alt="">'
+    ).join('');
+    starsEl.classList.remove('hidden');
+    starsEl.setAttribute('aria-label', `${earnedStars} étoile${earnedStars > 1 ? 's' : ''} gagnée${earnedStars > 1 ? 's' : ''}`);
+  }
 
   function newFalling() {
     if (state.queue.length === 0) return null;
@@ -520,27 +1040,116 @@
     };
   }
 
-  function startGame() {
+  function showLevelSelect() {
     SFX.start();
-    state.levelIdx = 0; state.score = 0; state.lives = 3; state.combo = 0;
+    refreshRocketBalance();
+    state.screen = 'LEVEL_SELECT';
+    state.running = false;
+    state.paused = false;
+    state.awaitingStart = false;
+    state.current = null;
+    state.queue = [];
+    state.takeoff = { active: false, t0: 0, duration: 2600 };
+    particles.length = 0;
+    hideStartPrompt();
+    hideChoices();
+    document.getElementById('start').classList.add('hidden');
+    document.getElementById('end').classList.add('hidden');
+    document.getElementById('levelSelect').classList.remove('hidden');
+    document.getElementById('topControls').style.display = 'none';
+    renderLevelSelect();
+    syncScreenWakeLock();
+    publishGameState();
+  }
+
+  function renderLevelSelect() {
+    const grid = document.getElementById('levelGrid');
+    grid.innerHTML = '';
+    LEVELS.forEach((lvl, idx) => {
+      const levelNumber = idx + 1;
+      const unlocked = levelNumber <= levelProgress.unlocked;
+      const stars = Number(levelProgress.stars[levelNumber]) || 0;
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'level-card ' + (unlocked ? 'unlocked' : 'locked');
+      card.setAttribute('aria-label', unlocked ? `Level ${levelNumber}` : `Level ${levelNumber} locked`);
+      const starIcons = Array.from({ length: stars }, () => '<img class="level-star" src="assets/star.png" alt="">').join('');
+      card.innerHTML =
+        `<div class="level-stars" aria-hidden="true">${starIcons}</div>
+        <div class="level-frame">
+          ${unlocked
+            ? `<span class="level-number">${levelNumber}</span>`
+            : '<img class="level-lock" src="assets/cadnat.png" alt="">'}
+        </div>`;
+      card.addEventListener('click', () => {
+        if (unlocked) {
+          startLevel(idx);
+          return;
+        }
+        card.classList.remove('shake');
+        void card.offsetWidth;
+        card.classList.add('shake');
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  async function startLevel(levelIdx) {
+    if (levelIdx + 1 > levelProgress.unlocked) return;
+    if (!canStartLevel()) return;
+    hideRocketEmptyMessage();
+    state.screen = 'LEVEL_INTRO';
+    state.levelIdx = Math.max(0, Math.min(levelIdx, LEVELS.length - 1));
+    state.score = 0; state.lives = 3; state.combo = 0;
     state.missed = []; state.correct = 0; state.attempted = 0;
     state.current = null; state.queue = [];
     particles.length = 0;
-    loadLevel();
+    const loaded = await loadLevel();
+    if (!loaded) return;
     document.getElementById('start').classList.add('hidden');
     document.getElementById('end').classList.add('hidden');
+    document.getElementById('levelSelect').classList.add('hidden');
     document.getElementById('topControls').style.display = 'flex';
     setPaused(false);
-    state.running = true;
-    // Level 1: wait for the user to say "start" before takeoff. Rocket stays on ground.
+    state.running = false;
     scrollY = 0;
-    state.takeoff = { active: false, t0: 0, duration: 2600 };
-    state.awaitingStart = true;
-    const lvl = LEVELS[0];
-    showBanner('LEVEL 1', lvl.name);
-    setTimeout(() => { if (state.awaitingStart) showStartPrompt(); }, 1800);
+    state.takeoff = { active: true, t0: performance.now(), duration: 2600 };
+    state.awaitingStart = false;
+    const lvl = LEVELS[state.levelIdx];
+    runLevelIntro(lvl);
     hideChoices();
     updateHUD();
+    syncScreenWakeLock();
+    publishGameState();
+  }
+
+  function runLevelIntro(lvl) {
+    const title = 'LEVEL ' + (state.levelIdx + 1) + ' — READY?';
+    const steps = [
+      [title, lvl.name],
+      [title, '3'],
+      [title, '2'],
+      [title, '1'],
+      ['GO!', ''],
+    ];
+    steps.forEach(([text, sub], i) => {
+      setTimeout(() => {
+        if (state.screen !== 'LEVEL_INTRO') return;
+        showBanner(text, sub);
+        if (i > 0 && i < steps.length - 1) SFX.tick();
+        if (i === steps.length - 1) {
+          SFX.start();
+          state.screen = 'PLAYING';
+          state.running = true;
+          syncScreenWakeLock();
+          publishGameState();
+          setTimeout(() => {
+            state.takeoff.active = false;
+            nextObject();
+          }, 500);
+        }
+      }, i * 700);
+    });
   }
 
   function showStartPrompt() {
@@ -552,34 +1161,35 @@
     if (el) el.classList.remove('show');
   }
 
-  function beginTakeoff() {
-    if (!state.awaitingStart) return;
-    state.awaitingStart = false;
-    hideStartPrompt();
-    state.takeoff = { active: true, t0: performance.now(), duration: 2600 };
-    setTimeout(() => { state.takeoff.active = false; nextObject(); }, state.takeoff.duration);
-  }
-
-  function loadLevel() {
+  async function loadLevel() {
     const lvl = LEVELS[state.levelIdx];
-    state.queue = [...lvl.level_objects]
+    if (!lvl) return false;
+    try {
+      let objects = levelObjectsCache.get(lvl.id);
+      if (!objects) {
+        objects = await fetchLevelObjects(lvl.id);
+        levelObjectsCache.set(lvl.id, objects);
+      }
+      lvl.level_objects = objects;
+      state.queue = [...objects]
       .filter(o => o.icon_path) // only include those with generated icons
       .sort(()=>Math.random()-.5)
-      .slice(0, lvl.total_objects);
+      .slice(0, objectsForLevel(state.levelIdx + 1));
+      state.totalObjects = state.queue.length;
+      state.queue.forEach(o => { if (o.icon_path) loadImg(o.icon_path); });
+      return true;
+    } catch (err) {
+      document.getElementById('loadStatus').textContent = "Erreur de chargement : " + err.message;
+      state.screen = 'LEVEL_SELECT';
+      document.getElementById('levelSelect').classList.remove('hidden');
+      return false;
+    }
   }
 
   function nextObject() {
-    if (!state.running) return;
+    if (!state.running || state.screen !== 'PLAYING') return;
     if (state.queue.length === 0) {
-      if (state.levelIdx >= LEVELS.length-1) return endGame(true);
-      state.levelIdx++;
-      loadLevel();
-      SFX.levelup();
-      const lvl = LEVELS[state.levelIdx];
-      showBanner('LEVEL ' + (state.levelIdx+1), lvl.name);
-      updateHUD();
-      setTimeout(nextObject, 2200);
-      return;
+      return endGame(true);
     }
     state.current = newFalling();
     document.getElementById('spoken').textContent = '';
@@ -595,10 +1205,6 @@
     const t = norm(text);
     if (!t) return;
     document.getElementById('spoken').textContent = '🎙 ' + text;
-    if (state.awaitingStart) {
-      if (/(start|go|depart|partir|stard|star)/.test(t)) beginTakeoff();
-      return;
-    }
     if (!state.current) return;
     if (t === norm(state.current.word)) hitTarget();
   }
@@ -740,30 +1346,31 @@
   }
 
   function endGame(won) {
+    state.screen = 'LEVEL_END';
     state.running = false;
     setPaused(false);
+    if (won) recordLevelWin();
+    else spendRocketOnFail();
     document.getElementById('topControls').style.display = 'none';
     hideChoices();
     document.getElementById('end').classList.remove('hidden');
-    const acc = state.attempted ? Math.round(100*state.correct/state.attempted) : 0;
-    const finishedAll = won && state.levelIdx >= LEVELS.length - 1;
+    const total = state.totalObjects || state.correct + state.missed.length || 0;
+    const hasNext = won && state.levelIdx < LEVELS.length - 1;
     const endTitle = document.getElementById('endTitle');
-    if (finishedAll) {
-      endTitle.textContent = 'CONGRATULATIONS';
+    if (won) {
+      endTitle.textContent = 'LEVEL COMPLETE';
       endTitle.style.color = '#ffd54a';
     } else {
-      endTitle.textContent = 'GAME OVER';
+      endTitle.textContent = 'LEVEL FAILED';
       endTitle.style.color = '';
     }
-    const congrats = finishedAll
-      ? `<div style="margin-bottom:12px;font-size:1.4em">🎉🏆🎉</div>
-         <div style="font-size:1.2em;font-weight:bold;margin-bottom:8px">FÉLICITATIONS !</div>
-         <div style="margin-bottom:12px">Tu as terminé tous les ${LEVELS.length} niveaux !<br>Reviens plus tard pour découvrir de nouveaux niveaux 🚀</div>`
-      : '';
+    renderEndStars(won);
     document.getElementById('endStats').innerHTML =
-      `${congrats}Score : <b>${state.score}</b><br>Niveau atteint : <b>${state.levelIdx+1}</b><br>Réussite : <b>${acc}%</b>${won && !finishedAll?'<br>🏆 VICTOIRE !':''}`;
+      `Niveau : <b>${state.levelIdx + 1}</b><br>Score : <b>${state.correct} / ${total}</b><br>Points : <b>${state.score}</b>`;
     const m = document.getElementById('missed');
-    m.innerHTML = state.missed.length ? '<b>Mots à réviser :</b><br>' + state.missed.join(' · ') : '<i>Aucun mot raté ! 🌟</i>';
+    m.innerHTML = state.missed.length ? '<b>Mots à réviser :</b><br>' + state.missed.join(' · ') : '<i>Aucun mot raté !</i>';
+    document.getElementById('nextLevelBtn').style.display = hasNext ? 'inline-block' : 'none';
+    syncScreenWakeLock();
   }
 
   function explode(x, y, colors) {
@@ -775,6 +1382,7 @@
   }
 
   function updateHUD() {
+    refreshRocketBalance();
     document.getElementById('score').textContent = state.score;
     document.getElementById('lvl').textContent = state.levelIdx+1;
     document.getElementById('hearts').textContent = '♥'.repeat(state.lives) + '♡'.repeat(Math.max(0,3-state.lives));
@@ -794,6 +1402,23 @@
     document.getElementById('bannerSub').textContent = sub || '';
     b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
   }
+  function publishGameState() {
+    try {
+      window.parent.postMessage({
+        type: 'word-rocket-state',
+        screen: state.screen,
+        paused: state.paused,
+      }, '*');
+    } catch(_) {}
+  }
+  function setButtonIcon(id, icon, label) {
+    const btn = document.getElementById(id);
+    const img = btn?.querySelector('img.ui-icon');
+    if (!btn || !img) return;
+    img.src = `ui-icons/${icon}.png`;
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+  }
 
   // ===== Render =====
   function drawImageContained(ctx, img, cx, cy, size) {
@@ -809,7 +1434,7 @@
     ctx.drawImage(src, cx - w/2, cy - h/2, w, h);
   }
 
-  const GROUND_H = 80;
+  const PLATFORM_MAX_SIZE = 320;
   function takeoffProgress() {
     if (state.awaitingStart) return 0;
     if (!state.takeoff || !state.takeoff.active) return 1;
@@ -819,22 +1444,18 @@
   // ease-in-out cubic
   const easeInOut = p => p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2, 3)/2;
 
-  function drawGround() {
+  function launchPlatformSize() {
+    return Math.max(230, Math.min(PLATFORM_MAX_SIZE, W * 0.58));
+  }
+
+  function drawLaunchPlatform() {
+    if (!launchPlatformImg || !launchPlatformImg.complete || !launchPlatformImg.naturalWidth) return;
     const p = takeoffProgress();
-    // Ground slides down off-screen as rocket lifts
     const eased = easeInOut(p);
-    const yTop = H - GROUND_H + eased * GROUND_H;
-    if (yTop >= H) return;
-    // grass strip
-    const g = pctx.createLinearGradient(0, yTop, 0, H);
-    g.addColorStop(0, '#86c45a'); g.addColorStop(0.4, '#5a9a3a'); g.addColorStop(1, '#3a7a2a');
-    pctx.fillStyle = g; pctx.fillRect(0, yTop, W, H - yTop);
-    // grass blades on top edge
-    pctx.strokeStyle = '#2d5a1a'; pctx.lineWidth = 2;
-    for (let x = 4; x < W; x += 10) {
-      const h = 6 + ((x*7) % 8);
-      pctx.beginPath(); pctx.moveTo(x, yTop); pctx.lineTo(x + 1, yTop - h); pctx.stroke();
-    }
+    const size = launchPlatformSize();
+    const cy = H - size * 0.07 + eased * size * 0.58;
+    if (cy - size / 2 > H) return;
+    drawImageContained(pctx, launchPlatformImg, W / 2, cy, size);
   }
 
   function drawRocket() {
@@ -844,7 +1465,7 @@
     // During takeoff, rocket sits on ground then lifts
     const p = takeoffProgress();
     const eased = easeInOut(p);
-    const groundedY = H - GROUND_H - ROCKET_SIZE/2 + 6; // resting on grass
+    const groundedY = H - launchPlatformSize() * 0.257 - ROCKET_SIZE/2 + 10;
     r.x = W/2;
     r.y = groundedY + (normalY - groundedY) * eased;
     let sx = 0, sy = 0;
@@ -866,14 +1487,14 @@
     const t = performance.now() / 1000;
     const liftBoost = state.takeoff && state.takeoff.active ? (1 + (1-p)*1.6) : 1;
     // Flame size & wobble animation
-    const flameBaseH = ROCKET_SIZE * 0.65;
-    const flameBaseW = ROCKET_SIZE * 0.42;
+    const flameBaseH = ROCKET_SIZE * 0.455;
+    const flameBaseW = ROCKET_SIZE * 0.294;
     const wobble = Math.sin(t * 18) * 0.08 + Math.sin(t * 11) * 0.05;
     const flicker = 0.92 + Math.sin(t * 30) * 0.06 + Math.random() * 0.04;
     const flameH = flameBaseH * (1 + wobble) * liftBoost * flicker;
     const flameW = flameBaseW * (1 + Math.sin(t * 22) * 0.06) * Math.min(1.4, liftBoost);
     const flameCx = r.x + sx + Math.sin(t * 14) * 1.5;
-    const flameTopY = r.y + ROCKET_SIZE/2 - 35 + sy; // tucked inside nozzle
+    const flameTopY = r.y + ROCKET_SIZE/2 - 36 + sy; // tucked inside nozzle
     if (flameImg && flameImg.complete && flameImg._src) {
       pctx.save();
       pctx.globalAlpha = 0.92 + Math.sin(t * 25) * 0.08;
@@ -916,11 +1537,13 @@
 
   function setPaused(p) {
     state.paused = !!p;
-    const btn = document.getElementById('pauseBtn');
-    if (btn) btn.textContent = state.paused ? '▶' : '⏸';
+    setButtonIcon('pauseBtn', state.paused ? 'play' : 'pause', state.paused ? 'Resume' : 'Pause');
+    syncScreenWakeLock();
+    publishGameState();
   }
 
   function stopEverythingForHome() {
+    state.screen = 'START';
     state.running = false;
     state.paused = true;
     state.awaitingStart = false;
@@ -940,7 +1563,10 @@
     try { actx?.suspend?.(); } catch(_) {}
     document.getElementById('topControls').style.display = 'none';
     document.getElementById('end').classList.add('hidden');
+    document.getElementById('levelSelect').classList.add('hidden');
     document.getElementById('start').classList.remove('hidden');
+    syncScreenWakeLock();
+    publishGameState();
   }
 
   function drawParticles() {
@@ -960,8 +1586,8 @@
     drawBackground(theme, t);
     pctx.clearRect(0,0,W,H);
     fctx.clearRect(0,0,W,H);
-    if (state.running) {
-      if (state.takeoff && (state.takeoff.active || takeoffProgress() < 1)) drawGround();
+    if (state.running || state.screen === 'LEVEL_INTRO') {
+      if (state.takeoff && (state.takeoff.active || takeoffProgress() < 1)) drawLaunchPlatform();
       drawRocket();
       if (state.current) drawFalling(state.current, t);
     }
@@ -974,9 +1600,26 @@
   function hideChoices() { choicesEl.style.display = 'none'; choicesEl.innerHTML = ''; }
   function allWords() {
     const set = new Set();
-    LEVELS.forEach(l => l.level_objects.forEach(o => { if (o.word) set.add(o.word); }));
+    const current = LEVELS[state.levelIdx]?.level_objects || levelObjectsCache.get(LEVELS[state.levelIdx]?.id) || [];
+    current.forEach(o => { if (o.word) set.add(o.word); });
+    DEFAULT_LEVELS.forEach(l => l.level_objects.forEach(o => { if (o.word) set.add(o.word); }));
     return [...set];
   }
+
+  function fitChoiceText(button) {
+    const label = button.querySelector('.choice-label');
+    if (!label) return;
+    const wordLength = label.textContent.trim().length;
+    let size = wordLength > 14 ? 11 : wordLength > 11 ? 12 : wordLength > 9 ? 14 : 16;
+    label.style.fontSize = `${size}px`;
+    label.style.letterSpacing = wordLength > 9 ? '0' : '1px';
+    const available = Math.max(40, button.clientWidth - 12);
+    while (label.scrollWidth > available && size > 9) {
+      size -= 1;
+      label.style.fontSize = `${size}px`;
+    }
+  }
+
   function showChoices(correct) {
     const pool = allWords().filter(w => norm(w) !== norm(correct));
     // shuffle pool
@@ -989,7 +1632,10 @@
     opts.forEach(w => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.textContent = w;
+      const label = document.createElement('span');
+      label.className = 'choice-label';
+      label.textContent = w;
+      b.appendChild(label);
       b.addEventListener('click', () => {
         if (!state.running || !state.current) return;
         const isGood = norm(w) === norm(state.current.word);
@@ -999,6 +1645,7 @@
         else { loseLife(); }
       });
       choicesEl.appendChild(b);
+      fitChoiceText(b);
     });
   }
   hideChoices();
@@ -1006,11 +1653,22 @@
   // ===== Speech (Whisper via /api/transcribe + Silero VAD + fuzzy IPA) =====
   const LANGS = [['en','🇬🇧','en'],['fr','🇫🇷','fr'],['es','🇪🇸','es']];
   let langIdx = 0;
-  let micVad = null, recOn = false, busy = false;
+  let micVad = null, micStream = null, recOn = false, busy = false;
+  let speechRecorder = null, speechChunks = [], speechBlobPromise = null;
   let speakOnAppear = false;
   let choicesEnabled = false;
   let micReady = false, levelsReady = false;
+  const SINGLE_WORD_AUDIO_PAD_SECONDS = 0.05;
+  const SINGLE_WORD_MAX_AUDIO_SECONDS = 2.0;
+  const SINGLE_WORD_VAD = {
+    positiveSpeechThreshold: 0.45,
+    negativeSpeechThreshold: 0.25,
+    minSpeechFrames: 2,
+    preSpeechPadFrames: 6,
+    redemptionFrames: 3,
+  };
   function updateStartBtn() {
+    refreshRocketBalance();
     const btn = document.getElementById('startBtn');
     btn.disabled = !(levelsReady && micReady);
     const status = document.getElementById('loadStatus');
@@ -1066,9 +1724,76 @@
     const contains = a.includes(b) || b.includes(a) ? 0.15 : 0;
     return Math.round(Math.min(1, Math.max(raw, phr) + contains) * 100);
   }
-  const ACCEPT_THRESHOLD = 72; // % similarity needed to validate
+  const ACCEPT_THRESHOLD = 68; // % similarity needed to validate
 
-  // --- Recorder helper (VAD passes Float32 PCM 16kHz; we encode to WAV) ---
+  function normalizeSingleWordTranscript(text) {
+    const raw = (text || '').trim();
+    if (!raw) return '';
+    const words = raw
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .match(/[a-z]+/g) || [];
+    if (words.length <= 1) return raw;
+    const unique = [];
+    words.forEach(word => {
+      if (unique[unique.length - 1] !== word) unique.push(word);
+    });
+    return unique.length === 1 ? unique[0] : raw;
+  }
+
+  // --- Recorder helper (VAD passes Float32 PCM 16kHz; prefer compact WebM/Opus, fallback to WAV) ---
+  function trimSpeechAudio(float32, sr) {
+    if (!float32 || !float32.length) return float32;
+    const frame = Math.max(1, Math.floor(sr * 0.01));
+    const pad = Math.floor(sr * SINGLE_WORD_AUDIO_PAD_SECONDS);
+    let maxRms = 0;
+    const rmsFrames = [];
+    for (let i = 0; i < float32.length; i += frame) {
+      let sum = 0, count = 0;
+      for (let j = i; j < Math.min(float32.length, i + frame); j++) {
+        const sample = float32[j] || 0;
+        sum += sample * sample;
+        count++;
+      }
+      const rms = Math.sqrt(sum / Math.max(1, count));
+      rmsFrames.push(rms);
+      maxRms = Math.max(maxRms, rms);
+    }
+    const threshold = Math.max(0.01, maxRms * 0.12);
+    let startFrame = 0, endFrame = rmsFrames.length - 1;
+    while (startFrame < rmsFrames.length && rmsFrames[startFrame] < threshold) startFrame++;
+    while (endFrame > startFrame && rmsFrames[endFrame] < threshold) endFrame--;
+    if (startFrame >= rmsFrames.length) return float32;
+    const start = Math.max(0, startFrame * frame - pad);
+    const end = Math.min(float32.length, (endFrame + 1) * frame + pad);
+    const maxSamples = Math.floor(sr * SINGLE_WORD_MAX_AUDIO_SECONDS);
+    const trimmed = float32.slice(start, end);
+    return trimmed.length > maxSamples ? trimmed.slice(0, maxSamples) : trimmed;
+  }
+
+  function enhanceSpeechAudio(float32) {
+    if (!float32 || !float32.length) return float32;
+    const out = new Float32Array(float32.length);
+    let prevInput = 0, prevOutput = 0, sumSquares = 0, peak = 0;
+    const hpAlpha = 0.98;
+    for (let i = 0; i < float32.length; i++) {
+      const input = float32[i] || 0;
+      const filtered = hpAlpha * (prevOutput + input - prevInput);
+      prevInput = input;
+      prevOutput = filtered;
+      out[i] = filtered;
+      sumSquares += filtered * filtered;
+      peak = Math.max(peak, Math.abs(filtered));
+    }
+    const rms = Math.sqrt(sumSquares / out.length);
+    if (rms < 0.004 || peak <= 0) return out;
+    const targetRms = 0.12;
+    const gain = Math.min(4, targetRms / rms, 0.95 / peak);
+    for (let i = 0; i < out.length; i++) out[i] *= gain;
+    return out;
+  }
+
   function pcmToWav(float32, sr) {
     const len = float32.length;
     const buf = new ArrayBuffer(44 + len * 2);
@@ -1086,9 +1811,68 @@
     return new Blob([buf], {type:'audio/wav'});
   }
 
+  function getSpeechMimeType() {
+    if (!window.MediaRecorder) return '';
+    return ['audio/webm;codecs=opus', 'audio/webm'].find(type => MediaRecorder.isTypeSupported(type)) || '';
+  }
+
+  function startSpeechRecording() {
+    const mimeType = getSpeechMimeType();
+    if (!micStream || !mimeType) return;
+    try {
+      speechChunks = [];
+      speechRecorder = new MediaRecorder(micStream, {
+        mimeType,
+        audioBitsPerSecond: 32000,
+      });
+      speechBlobPromise = new Promise(resolve => {
+        speechRecorder.ondataavailable = event => {
+          if (event.data && event.data.size > 0) speechChunks.push(event.data);
+        };
+        speechRecorder.onstop = () => {
+          const blob = speechChunks.length ? new Blob(speechChunks, { type: mimeType }) : null;
+          speechChunks = [];
+          resolve(blob);
+        };
+        speechRecorder.onerror = () => {
+          speechChunks = [];
+          resolve(null);
+        };
+      });
+      speechRecorder.start();
+    } catch (_) {
+      speechRecorder = null;
+      speechBlobPromise = null;
+      speechChunks = [];
+    }
+  }
+
+  async function stopSpeechRecording() {
+    const recorder = speechRecorder;
+    const pendingBlob = speechBlobPromise;
+    speechRecorder = null;
+    speechBlobPromise = null;
+    if (!recorder || !pendingBlob) return null;
+    try {
+      if (recorder.state !== 'inactive') recorder.stop();
+      const blob = await pendingBlob;
+      return blob && blob.size > 120 ? blob : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function prepareSpeechBlob(float32) {
+    const compressed = await stopSpeechRecording();
+    if (compressed) return compressed;
+    const trimmed = trimSpeechAudio(float32, 16000);
+    return pcmToWav(enhanceSpeechAudio(trimmed), 16000);
+  }
+
   async function transcribe(blob) {
     const fd = new FormData();
-    fd.append('audio', blob, 'speech.wav');
+    const filename = blob.type.includes('webm') ? 'speech.webm' : 'speech.wav';
+    fd.append('audio', blob, filename);
     fd.append('language', LANGS[langIdx][0]);
     if (state.current?.word) fd.append('prompt', state.current.word);
     const r = await fetch('/api/transcribe', { method:'POST', body: fd });
@@ -1103,11 +1887,17 @@
   }
 
   async function handleUtterance(float32) {
-    if (busy || !state.running) return;
+    if (busy || !state.running) {
+      await stopSpeechRecording();
+      return;
+    }
     busy = true;
+    try { if (micVad) micVad.pause(); } catch (_) {}
     try {
-      const wav = pcmToWav(float32, 16000);
-      const heard = (await transcribe(wav)).trim();
+      document.getElementById('spoken').textContent = '⏳ Analyse...';
+      const audioBlob = await prepareSpeechBlob(float32);
+      const rawHeard = (await transcribe(audioBlob)).trim();
+      const heard = normalizeSingleWordTranscript(rawHeard);
       if (!heard) return;
       if (state.awaitingStart) {
         document.getElementById('spoken').textContent = `🎙 ${heard}`;
@@ -1126,6 +1916,9 @@
       document.getElementById('spoken').textContent = '⚠️ ' + e.message;
     } finally {
       busy = false;
+      if (recOn && micVad && state.running) {
+        try { micVad.start(); } catch (_) {}
+      }
     }
   }
 
@@ -1146,16 +1939,31 @@
         document.head.appendChild(s1);
       });
     }
-    micVad = await window.vad.MicVAD.new({
-      positiveSpeechThreshold: 0.6,
-      negativeSpeechThreshold: 0.35,
-      minSpeechFrames: 3,
-      preSpeechPadFrames: 4,
-      redemptionFrames: 8,
+    if (!micStream && navigator.mediaDevices?.getUserMedia) {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            channelCount: 1,
+          },
+        });
+      } catch (_) {}
+    }
+    const vadOptions = {
+      ...SINGLE_WORD_VAD,
       baseAssetPath: 'https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.24/dist/',
       onnxWASMBasePath: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/',
+      onSpeechStart: () => {
+        if (busy) return;
+        if (state.running) document.getElementById('spoken').textContent = "🎙 Je t'écoute...";
+        startSpeechRecording();
+      },
       onSpeechEnd: (audio) => { handleUtterance(audio); },
-    });
+    };
+    if (micStream) vadOptions.stream = micStream;
+    micVad = await window.vad.MicVAD.new(vadOptions);
     return micVad;
   }
 
@@ -1169,7 +1977,9 @@
       recOn = wantOn;
       if (recOn) { v.start(); micReady = true; } else { v.pause(); }
       sideBtn.classList.toggle('on', recOn);
-      sideBtn.textContent = recOn ? '🎤 ON' : '🎤';
+      sideBtn.title = recOn ? 'Micro ON' : 'Micro';
+      sideBtn.setAttribute('aria-label', sideBtn.title);
+      document.getElementById('micLabel').textContent = sideBtn.title;
       if (optBtn) {
         optBtn.classList.toggle('on', recOn);
         optBtn.textContent = recOn ? '✓ Activé' : (micReady ? 'Réactiver' : 'Activer');
@@ -1177,7 +1987,9 @@
       }
       updateStartBtn();
     } catch (e) {
-      sideBtn.textContent = '🎤';
+      sideBtn.title = 'Micro';
+      sideBtn.setAttribute('aria-label', 'Micro');
+      document.getElementById('micLabel').textContent = 'Micro';
       if (optBtn) { optBtn.disabled = false; optBtn.textContent = 'Réessayer'; }
       alert('Micro indisponible : ' + e.message);
     }
@@ -1186,21 +1998,31 @@
   document.getElementById('optMic').addEventListener('click', () => { unlockSpeech(); enableMic(true); });
   document.getElementById('optSpeak').addEventListener('change', e => { speakOnAppear = e.target.checked; });
   document.getElementById('optText').addEventListener('change', e => { choicesEnabled = e.target.checked; });
+  document.getElementById('infoBtn').addEventListener('click', () => {
+    const info = document.getElementById('startInfo');
+    info.classList.toggle('hidden');
+  });
   document.getElementById('lang').addEventListener('click', () => {
     unlockSpeech();
     langIdx = (langIdx+1) % LANGS.length;
-    document.getElementById('lang').textContent = LANGS[langIdx][1];
+    document.getElementById('langLabel').textContent = LANGS[langIdx][1];
   });
   document.getElementById('mute').addEventListener('click', () => {
     unlockSpeech();
     muted = !muted;
-    document.getElementById('mute').textContent = muted ? '🔇' : '🔊';
+    setButtonIcon('mute', muted ? 'close' : 'volume', muted ? 'Muted' : 'Sound');
   });
 
-  document.getElementById('startBtn').addEventListener('click', () => { ensureAudio(); unlockSpeech(); startGame(); });
-  document.getElementById('replayBtn').addEventListener('click', () => { unlockSpeech(); startGame(); });
+  document.getElementById('startBtn').addEventListener('click', () => { if (!levelsReady || !micReady) return; ensureAudio(); unlockSpeech(); showLevelSelect(); });
+  document.getElementById('retryBtn').addEventListener('click', () => { unlockSpeech(); startLevel(state.levelIdx); });
+  document.getElementById('nextLevelBtn').addEventListener('click', () => { unlockSpeech(); startLevel(state.levelIdx + 1); });
+  document.getElementById('levelSelectBtn').addEventListener('click', () => { unlockSpeech(); showLevelSelect(); });
+  document.getElementById('levelHomeBtn').addEventListener('click', () => { unlockSpeech(); stopEverythingForHome(); });
+  document.getElementById('closeRocketEmptyBtn').addEventListener('click', hideRocketEmptyMessage);
+  document.getElementById('shareRocketBtn').addEventListener('click', () => showRocketEmptyPlaceholder('share'));
+  document.getElementById('buyRocketBtn').addEventListener('click', () => showRocketEmptyPlaceholder('buy'));
   document.getElementById('pauseBtn').addEventListener('click', () => { if (state.running) setPaused(!state.paused); });
-  document.getElementById('restartBtn').addEventListener('click', () => { unlockSpeech(); startGame(); });
+  document.getElementById('restartBtn').addEventListener('click', () => { unlockSpeech(); startLevel(state.levelIdx); });
   document.getElementById('homeBtn').addEventListener('click', () => {
     stopEverythingForHome();
     try { window.parent.postMessage({ type: 'word-rocket-home' }, '*'); } catch(_) {}
@@ -1209,27 +2031,34 @@
     if (e.code === 'Space' && !state.running) {
       e.preventDefault();
       if (!document.getElementById('start').classList.contains('hidden')) {
-        ensureAudio(); unlockSpeech(); startGame();
+        if (!levelsReady || !micReady) return;
+        ensureAudio(); unlockSpeech(); showLevelSelect();
       } else if (!document.getElementById('end').classList.contains('hidden')) {
-        unlockSpeech(); startGame();
+        unlockSpeech(); startLevel(state.levelIdx);
       }
     }
   });
+  updateRocketBalanceUI();
+  setInterval(refreshRocketBalance, 60 * 1000);
 
   // ===== Boot =====
   resize();
   requestAnimationFrame(loop);
 
   fetchLevels().then(async (levels) => {
-    LEVELS = levels.filter(l => l.level_objects && l.level_objects.length > 0);
+    LEVELS = levels.filter(l => Number.isFinite(Number(l.id)));
     rocketImg = loadImg('shared/rocket.webp');
     flameImg = loadImg('shared/flame.webp');
+    launchPlatformImg = loadLocalImg('assets/rocket-launch-platform.webp');
     const statusEl = document.getElementById('loadStatus');
 
-    // Start immediately: only warm image cache in the background.
-    const firstLevelPaths = LEVELS[0]?.level_objects?.map(o => o.icon_path).filter(Boolean) || [];
-    firstLevelPaths.forEach(loadImg);
-    setTimeout(() => LEVELS.forEach(l => l.level_objects.forEach(o => { if (o.icon_path) loadImg(o.icon_path); })), 300);
+    // Warm the first level only; selected levels still load independently.
+    if (LEVELS[0]) {
+      fetchLevelObjects(LEVELS[0].id).then(objects => {
+        levelObjectsCache.set(LEVELS[0].id, objects);
+        objects.map(o => o.icon_path).filter(Boolean).forEach(loadImg);
+      }).catch(() => {});
+    }
 
     statusEl.textContent = `${LEVELS.length} niveaux prêts`;
     levelsReady = true;

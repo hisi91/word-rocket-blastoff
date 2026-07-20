@@ -1,5 +1,6 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
@@ -41,8 +42,8 @@ function AuthPage() {
         if (error) throw error;
         navigate({ to: "/upload" });
       }
-    } catch (err: any) {
-      setError(err.message ?? "Erreur");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur");
     } finally {
       setLoading(false);
     }

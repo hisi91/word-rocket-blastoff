@@ -12,9 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiUploadIconRouteImport } from './routes/api/upload-icon'
+import { Route as ApiPingGroqRouteImport } from './routes/api/ping-groq'
 import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
+import { Route as ApiUploadIconRouteImport } from './routes/api/upload-icon'
 import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated/upload'
 
 const AuthRoute = AuthRouteImport.update({
@@ -31,9 +32,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiUploadIconRoute = ApiUploadIconRouteImport.update({
-  id: '/api/upload-icon',
-  path: '/api/upload-icon',
+const ApiPingGroqRoute = ApiPingGroqRouteImport.update({
+  id: '/api/ping-groq',
+  path: '/api/ping-groq',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiTtsRoute = ApiTtsRouteImport.update({
@@ -46,6 +47,11 @@ const ApiTranscribeRoute = ApiTranscribeRouteImport.update({
   path: '/api/transcribe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiUploadIconRoute = ApiUploadIconRouteImport.update({
+  id: '/api/upload-icon',
+  path: '/api/upload-icon',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedUploadRoute = AuthenticatedUploadRouteImport.update({
   id: '/upload',
   path: '/upload',
@@ -56,6 +62,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/upload': typeof AuthenticatedUploadRoute
+  '/api/ping-groq': typeof ApiPingGroqRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/tts': typeof ApiTtsRoute
   '/api/upload-icon': typeof ApiUploadIconRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/upload': typeof AuthenticatedUploadRoute
+  '/api/ping-groq': typeof ApiPingGroqRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/tts': typeof ApiTtsRoute
   '/api/upload-icon': typeof ApiUploadIconRoute
@@ -74,33 +82,23 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/upload': typeof AuthenticatedUploadRoute
+  '/api/ping-groq': typeof ApiPingGroqRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/tts': typeof ApiTtsRoute
   '/api/upload-icon': typeof ApiUploadIconRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/auth'
-    | '/upload'
-    | '/api/transcribe'
-    | '/api/tts'
-    | '/api/upload-icon'
+  fullPaths: '/' | '/auth' | '/upload' | '/api/ping-groq' | '/api/transcribe' | '/api/tts' | '/api/upload-icon'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/auth'
-    | '/upload'
-    | '/api/transcribe'
-    | '/api/tts'
-    | '/api/upload-icon'
+  to: '/' | '/auth' | '/upload' | '/api/ping-groq' | '/api/transcribe' | '/api/tts' | '/api/upload-icon'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/upload'
+    | '/api/ping-groq'
     | '/api/transcribe'
     | '/api/tts'
     | '/api/upload-icon'
@@ -110,6 +108,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPingGroqRoute: typeof ApiPingGroqRoute
   ApiTranscribeRoute: typeof ApiTranscribeRoute
   ApiTtsRoute: typeof ApiTtsRoute
   ApiUploadIconRoute: typeof ApiUploadIconRoute
@@ -152,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTtsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ping-groq': {
+      id: '/api/ping-groq'
+      path: '/api/ping-groq'
+      fullPath: '/api/ping-groq'
+      preLoaderRoute: typeof ApiPingGroqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/transcribe': {
       id: '/api/transcribe'
       path: '/api/transcribe'
@@ -184,6 +190,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPingGroqRoute: ApiPingGroqRoute,
   ApiTranscribeRoute: ApiTranscribeRoute,
   ApiTtsRoute: ApiTtsRoute,
   ApiUploadIconRoute: ApiUploadIconRoute,

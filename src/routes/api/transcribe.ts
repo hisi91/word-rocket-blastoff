@@ -34,21 +34,35 @@ export const Route = createFileRoute("/api/transcribe")({
         if (!(audio instanceof Blob)) return emptyResult("Missing audio", false);
         if (audio.size > 5 * 1024 * 1024) return emptyResult("Audio too large", false);
 
-        const fd = new FormData();
-        fd.append("file", audio, "speech.webm");
-        fd.append("model", "whisper-large-v3");
-        fd.append("language", language);
-        fd.append("response_format", "json");
-        fd.append("temperature", "0");
-        if (prompt) fd.append("prompt", prompt);
+        const filename = audio.type.includes("webm") ? "speech.webm" : "speech.wav";
+        const primaryModel = process.env.GROQ_TRANSCRIBE_MODEL || "whisper-large-v3-turbo";
+        const fallbackModel = "whisper-large-v3";
 
-        try {
-          const res = await fetch(GROQ_URL, {
+        const buildFormData = (model: string) => {
+          const fd = new FormData();
+          fd.append("file", audio, filename);
+          fd.append("model", model);
+          fd.append("language", language);
+          fd.append("response_format", "json");
+          fd.append("temperature", "0");
+          if (prompt) fd.append("prompt", prompt);
+          return fd;
+        };
+
+        const sendToGroq = (model: string) =>
+          fetch(GROQ_URL, {
             method: "POST",
             headers: { Authorization: `Bearer ${key}` },
-            body: fd,
+            body: buildFormData(model),
           });
-          const text = await res.text();
+
+        try {
+          let res = await sendToGroq(primaryModel);
+          let text = await res.text();
+          if (!res.ok && primaryModel !== fallbackModel) {
+            res = await sendToGroq(fallbackModel);
+            text = await res.text();
+          }
           if (!res.ok) return emptyResult(`Groq ${res.status}: ${text.slice(0, 200)}`);
           return new Response(text, { status: 200, headers: jsonHeaders });
         } catch (err) {
