@@ -135,10 +135,10 @@
   .menu-cloud { position:absolute; z-index:0; width:var(--cloud-w); height:auto;
     opacity:var(--cloud-opacity,.72); pointer-events:none; filter:drop-shadow(0 8px 0 rgba(24,102,132,.08));
     animation:cloudDrift var(--cloud-speed,24s) ease-in-out infinite; }
-  .menu-cloud.c1 { --cloud-w:min(360px,44vw); --cloud-opacity:.62; --cloud-speed:24s; left:-110px; top:12vh; }
-  .menu-cloud.c2 { --cloud-w:min(520px,54vw); --cloud-opacity:.44; --cloud-speed:30s; right:-170px; top:20vh; animation-direction:reverse; }
-  .menu-cloud.c3 { --cloud-w:min(460px,50vw); --cloud-opacity:.5; --cloud-speed:28s; left:18vw; bottom:5vh; }
-  .menu-cloud.c4 { --cloud-w:min(280px,38vw); --cloud-opacity:.42; --cloud-speed:22s; right:12vw; bottom:25vh; animation-direction:reverse; }
+  .menu-cloud.c1 { --cloud-w:min(360px,44vw); --cloud-opacity:.96; --cloud-speed:24s; left:-110px; top:12vh; }
+  .menu-cloud.c2 { --cloud-w:min(520px,54vw); --cloud-opacity:.88; --cloud-speed:30s; right:-170px; top:20vh; animation-direction:reverse; }
+  .menu-cloud.c3 { --cloud-w:min(460px,50vw); --cloud-opacity:.92; --cloud-speed:28s; left:18vw; bottom:5vh; }
+  .menu-cloud.c4 { --cloud-w:min(280px,38vw); --cloud-opacity:.86; --cloud-speed:22s; right:12vw; bottom:25vh; animation-direction:reverse; }
   @keyframes cloudDrift { 0%,100% { transform:translateX(0) translateY(0); } 50% { transform:translateX(7vw) translateY(-1.5vh); } }
   .home-sky-rocket { position:absolute; z-index:1; width:86px; height:24px; border-radius:52% 18% 18% 52%;
     background:linear-gradient(90deg,#f7f7f7 0 52%,#d0d6dc 53% 74%,#c81920 75% 100%);
