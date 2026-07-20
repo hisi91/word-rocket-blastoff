@@ -165,13 +165,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTranscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/upload-icon': {
-      id: '/api/upload-icon'
-      path: '/api/upload-icon'
-      fullPath: '/api/upload-icon'
-      preLoaderRoute: typeof ApiUploadIconRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/upload': {
       id: '/_authenticated/upload'
       path: '/upload'
