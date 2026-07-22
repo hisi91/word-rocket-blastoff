@@ -734,7 +734,10 @@
 
   // ===== Audio =====
   let actx = null, muted = false;
-  function ensureAudio() { if (!actx) actx = new (window.AudioContext||window.webkitAudioContext)(); }
+  function ensureAudio() {
+    if (!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
+    try { actx.resume?.(); } catch (_) {}
+  }
   function beep(freq, dur=0.1, type='square', vol=0.08) {
     if (muted) return;
     try {
@@ -1308,8 +1311,8 @@
     } catch(e) {}
   }
   // --- Groq Orpheus TTS (cached) with speechSynthesis fallback ---
-  const ttsCache = new Map(); // text -> objectURL
-  let ttsAudio = null;
+  const ttsCache = new Map(); // text -> audio Blob
+  let ttsAudio = null, ttsSource = null;
   async function fetchTTS(text) {
     if (ttsCache.has(text)) return ttsCache.get(text);
     try {
@@ -1322,10 +1325,35 @@
       if (r.headers.get('x-tts-fallback') === 'true') return null;
       const blob = await r.blob();
       if (!blob.type.startsWith('audio/')) return null;
-      const url = URL.createObjectURL(blob);
-      ttsCache.set(text, url);
-      return url;
+      ttsCache.set(text, blob);
+      return blob;
     } catch { return null; }
+  }
+  async function decodeAudioBlob(blob) {
+    ensureAudio();
+    const data = await blob.arrayBuffer();
+    if (actx.decodeAudioData.length > 1) {
+      return await new Promise((resolve, reject) => {
+        actx.decodeAudioData(data.slice(0), resolve, reject);
+      });
+    }
+    return await actx.decodeAudioData(data);
+  }
+  async function playGroqTTS(blob, onDone) {
+    const buffer = await decodeAudioBlob(blob);
+    try { if (ttsSource) ttsSource.stop(); } catch (_) {}
+    const source = actx.createBufferSource();
+    const gain = actx.createGain();
+    source.buffer = buffer;
+    gain.gain.value = muted ? 0 : 1;
+    source.connect(gain);
+    gain.connect(actx.destination);
+    ttsSource = source;
+    source.onended = () => {
+      if (ttsSource === source) ttsSource = null;
+      onDone();
+    };
+    source.start();
   }
   function speakFallback(text) {
     try {
@@ -1348,28 +1376,24 @@
     if (shouldResumeVad) micVad.pause();
     speakingWord = true;
     try { window.speechSynthesis?.cancel(); } catch {}
-    // Pause any prior playback but KEEP the unlocked element so mobile
-    // browsers continue to allow programmatic playback.
+    try { if (ttsSource) { ttsSource.onended = null; ttsSource.stop(); ttsSource = null; } } catch {}
+    // Pause any prior fallback playback but KEEP the unlocked element so mobile
+    // browsers continue to allow programmatic playback if fallback is needed.
     if (ttsAudio) { try { ttsAudio.pause(); ttsAudio.currentTime = 0; } catch {} }
 
-    const url = await fetchTTS(text);
+    const blob = await fetchTTS(text);
     if (mySeq !== speakSeq) return; // a newer speak() superseded us
-    if (!url) { speakFallback(text); return; }
+    if (!blob) { speakFallback(text); return; }
 
-    // Reuse the persistent (already-unlocked) element when available.
-    const a = ttsAudio || new Audio();
-    ttsAudio = a;
-    try { a.playsInline = true; a.setAttribute('playsinline',''); a.setAttribute('webkit-playsinline',''); } catch(_){}
-    a.volume = muted ? 0 : 1;
     const done = () => {
       speakingWord = false;
-      a.onended = null; a.onerror = null;
       if (shouldResumeVad && recOn && micVad) micVad.start();
     };
-    a.onended = done;
-    a.onerror = () => { done(); speakFallback(text); };
-    try { a.src = url; a.load(); } catch(_){}
-    try { const p = a.play(); if (p && p.then) await p; } catch { done(); speakFallback(text); }
+    try {
+      await playGroqTTS(blob, done);
+    } catch {
+      speakFallback(text);
+    }
   }
 
   function loseLife() {
@@ -1598,6 +1622,7 @@
     hideStartPrompt();
     hideChoices();
     try { window.speechSynthesis?.cancel(); } catch(_) {}
+    try { if (ttsSource) { ttsSource.onended = null; ttsSource.stop(); ttsSource = null; } } catch(_) {}
     try { if (ttsAudio) { ttsAudio.pause(); ttsAudio.currentTime = 0; ttsAudio = null; } } catch(_) {}
     try { actx?.suspend?.(); } catch(_) {}
     document.getElementById('topControls').style.display = 'none';
