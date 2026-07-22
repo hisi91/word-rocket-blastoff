@@ -2027,6 +2027,36 @@
   document.getElementById('optText').addEventListener('change', e => { choicesEnabled = e.target.checked; });
   const infoDialog = document.getElementById('infoDialog');
   const micPermissionDialog = document.getElementById('micPermissionDialog');
+
+  async function getMicrophonePermissionState() {
+    try {
+      if (!navigator.permissions || !navigator.permissions.query) return null;
+      const permission = await navigator.permissions.query({ name: 'microphone' });
+      return permission.state;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function goToLevelSelectWithMicCheck() {
+    if (!levelsReady) return;
+    ensureAudio();
+    unlockSpeech();
+    if (micReady) {
+      showLevelSelect();
+      return;
+    }
+    const permissionState = await getMicrophonePermissionState();
+    if (permissionState === 'granted') {
+      const enabled = await enableMic(true);
+      if (enabled && micReady) {
+        showLevelSelect();
+        return;
+      }
+    }
+    micPermissionDialog.classList.remove('hidden');
+  }
+
   document.getElementById('infoBtn').addEventListener('click', () => {
     infoDialog.classList.remove('hidden');
   });
@@ -2059,11 +2089,7 @@
   });
 
   document.getElementById('startBtn').addEventListener('click', () => {
-    if (!levelsReady) return;
-    ensureAudio();
-    unlockSpeech();
-    if (micReady) showLevelSelect();
-    else micPermissionDialog.classList.remove('hidden');
+    goToLevelSelectWithMicCheck();
   });
   document.getElementById('retryBtn').addEventListener('click', () => { unlockSpeech(); startLevel(state.levelIdx); });
   document.getElementById('nextLevelBtn').addEventListener('click', () => { unlockSpeech(); startLevel(state.levelIdx + 1); });
@@ -2082,11 +2108,7 @@
     if (e.code === 'Space' && !state.running) {
       e.preventDefault();
       if (!document.getElementById('start').classList.contains('hidden')) {
-        if (!levelsReady) return;
-        ensureAudio();
-        unlockSpeech();
-        if (micReady) showLevelSelect();
-        else micPermissionDialog.classList.remove('hidden');
+        goToLevelSelectWithMicCheck();
       } else if (!document.getElementById('end').classList.contains('hidden')) {
         unlockSpeech(); startLevel(state.levelIdx);
       }
