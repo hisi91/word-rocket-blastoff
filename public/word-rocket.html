@@ -177,9 +177,19 @@
     display:grid; place-items:center; }
   #start .info-toggle::before { content:'?'; display:block; font-size:28px; line-height:1;
     transform:translateY(1px); text-shadow:0 2px 0 #8c185d; }
-  #start .start-info { position:relative; z-index:3; max-width:min(560px,90vw); border:3px solid #fff7b4;
-    border-radius:16px; background:rgba(255,255,255,.9); color:#5a2b00; font-weight:bold; text-shadow:none;
-    box-shadow:0 6px 0 #d98010, 0 12px 18px rgba(47,104,132,.2); }
+  #start .info-modal { position:absolute; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
+    padding:22px; background:rgba(0,45,80,.28); backdrop-filter:blur(2px); }
+  #start .info-modal.hidden { display:none; }
+  #start .info-card { width:min(520px,92vw); border:4px solid #fff7b4; border-radius:20px;
+    background:rgba(255,255,255,.94); color:#5a2b00; text-shadow:none; padding:22px 20px 18px;
+    box-shadow:0 8px 0 #d98010, 0 18px 26px rgba(47,104,132,.28); }
+  #start .info-title { font-family:'Luckiest Guy','Courier New',monospace; font-size:28px; letter-spacing:2px;
+    margin-bottom:10px; color:#5a2b00; }
+  #start .start-info { max-width:none; color:#23475a; font-weight:bold; text-shadow:none; }
+  #start .info-got-it { margin-top:16px; min-width:140px; border:3px solid #ffd45a; border-radius:999px;
+    background:linear-gradient(#ffb13b,#ff7b1a); color:#fff; font-family:'Luckiest Guy','Courier New',monospace;
+    font-size:18px; letter-spacing:1px; text-shadow:0 2px 0 #8c3900; box-shadow:0 5px 0 #b94a00;
+    padding:10px 18px; cursor:pointer; }
   #start .loading { position:relative; z-index:2; min-height:22px; color:#0d6f8d; font-weight:bold;
     text-shadow:0 1px 0 #fff; }
   #start .start-options { position:relative; z-index:2; width:min(520px,92vw); gap:9px; padding:12px 14px;
@@ -343,9 +353,6 @@
         <div id="homeRocketBalance" class="rocket-balance"></div>
         <button type="button" class="info-toggle" id="infoBtn">INFORMATION</button>
       </div>
-      <div class="subtitle start-info hidden" id="startInfo">Des objets tombent du ciel — devine le mot en anglais avant qu'ils ne touchent ta fusée.
-        <br>Les noms ne sont PAS affichés : à toi de reconnaître l'icône !
-        <br>Des niveaux courts, du sol jusqu'au cosmos.</div>
       <div id="loadStatus" class="loading">Chargement des niveaux...</div>
       <div class="start-options">
         <label class="opt-row">
@@ -368,6 +375,15 @@
         </div>
       </div>
       <button class="big icon-text" id="startBtn" disabled><img class="ui-icon" src="ui-icons/play.png" alt="">JOUER</button>
+    </div>
+    <div class="info-modal hidden" id="infoDialog" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+      <div class="info-card">
+        <div class="info-title" id="infoTitle">Information</div>
+        <div class="subtitle start-info" id="startInfo">Des objets tombent du ciel — devine le mot en anglais avant qu'ils ne touchent ta fusée.
+          <br>Les noms ne sont PAS affichés : à toi de reconnaître l'icône !
+          <br>Des niveaux courts, du sol jusqu'au cosmos.</div>
+        <button type="button" class="info-got-it" id="infoGotIt">Got it</button>
+      </div>
     </div>
   </div>
 
@@ -1999,9 +2015,15 @@
   document.getElementById('optMic').addEventListener('click', () => { unlockSpeech(); enableMic(true); });
   document.getElementById('optSpeak').addEventListener('change', e => { speakOnAppear = e.target.checked; });
   document.getElementById('optText').addEventListener('change', e => { choicesEnabled = e.target.checked; });
+  const infoDialog = document.getElementById('infoDialog');
   document.getElementById('infoBtn').addEventListener('click', () => {
-    const info = document.getElementById('startInfo');
-    info.classList.toggle('hidden');
+    infoDialog.classList.remove('hidden');
+  });
+  document.getElementById('infoGotIt').addEventListener('click', () => {
+    infoDialog.classList.add('hidden');
+  });
+  infoDialog.addEventListener('click', e => {
+    if (e.target === infoDialog) infoDialog.classList.add('hidden');
   });
   document.getElementById('lang').addEventListener('click', () => {
     unlockSpeech();
