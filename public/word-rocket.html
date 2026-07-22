@@ -338,7 +338,7 @@
     <button id="homeBtn" class="icon-only" title="Home" aria-label="Home"><img class="ui-icon" src="ui-icons/home.png" alt=""></button>
   </div>
   <div class="side-controls">
-    <button id="mic" class="icon-only" title="Micro" aria-label="Micro"><img class="ui-icon" src="ui-icons/music.png" alt=""><span id="micLabel" class="sr-only">Micro</span></button>
+    <button id="mic" class="icon-only" title="Micro" aria-label="Micro" style="display:none"><img class="ui-icon" src="ui-icons/music.png" alt=""><span id="micLabel" class="sr-only">Micro</span></button>
     <button id="lang" class="icon-only text-chip" title="Language" aria-label="Language"><img class="ui-icon" src="ui-icons/help.png" alt=""><span id="langLabel">🇬🇧</span></button>
     <button id="mute" class="icon-only" title="Sound" aria-label="Sound"><img class="ui-icon" src="ui-icons/volume.png" alt=""></button>
   </div>
@@ -1075,6 +1075,7 @@
   function showLevelSelect() {
     SFX.start();
     refreshRocketBalance();
+    stopMicListening(true);
     state.screen = 'LEVEL_SELECT';
     state.running = false;
     state.paused = false;
@@ -1089,6 +1090,7 @@
     document.getElementById('end').classList.add('hidden');
     document.getElementById('levelSelect').classList.remove('hidden');
     document.getElementById('topControls').style.display = 'none';
+    document.getElementById('mic').style.display = 'none';
     renderLevelSelect();
     syncScreenWakeLock();
     publishGameState();
@@ -1138,10 +1140,16 @@
     particles.length = 0;
     const loaded = await loadLevel();
     if (!loaded) return;
+    const micEnabled = await enableMic(true);
+    if (!micEnabled || !micReady) {
+      state.screen = 'LEVEL_SELECT';
+      return;
+    }
     document.getElementById('start').classList.add('hidden');
     document.getElementById('end').classList.add('hidden');
     document.getElementById('levelSelect').classList.add('hidden');
     document.getElementById('topControls').style.display = 'flex';
+    document.getElementById('mic').style.display = '';
     setPaused(false);
     state.running = false;
     scrollY = 0;
@@ -1380,10 +1388,12 @@
   function endGame(won) {
     state.screen = 'LEVEL_END';
     state.running = false;
+    stopMicListening(true);
     setPaused(false);
     if (won) recordLevelWin();
     else spendRocketOnFail();
     document.getElementById('topControls').style.display = 'none';
+    document.getElementById('mic').style.display = 'none';
     hideChoices();
     document.getElementById('end').classList.remove('hidden');
     const total = state.totalObjects || state.correct + state.missed.length || 0;
@@ -1581,14 +1591,14 @@
     speakSeq++;
     speakingWord = false;
     busy = false;
-    recOn = false;
+    stopMicListening(true);
     hideStartPrompt();
     hideChoices();
     try { window.speechSynthesis?.cancel(); } catch(_) {}
     try { if (ttsAudio) { ttsAudio.pause(); ttsAudio.currentTime = 0; ttsAudio = null; } } catch(_) {}
-    try { if (micVad) micVad.pause(); } catch(_) {}
     try { actx?.suspend?.(); } catch(_) {}
     document.getElementById('topControls').style.display = 'none';
+    document.getElementById('mic').style.display = 'none';
     document.getElementById('end').classList.add('hidden');
     document.getElementById('levelSelect').classList.add('hidden');
     document.getElementById('start').classList.remove('hidden');
@@ -2038,6 +2048,49 @@
     }
   }
 
+  function stopMicListening(releaseStream = false) {
+    recOn = false;
+    try { if (micVad) micVad.pause(); } catch (_) {}
+    if (releaseStream) {
+      try { if (speechRecorder && speechRecorder.state !== 'inactive') speechRecorder.stop(); } catch (_) {}
+      speechRecorder = null;
+      speechBlobPromise = null;
+      speechChunks = [];
+      try { micStream?.getTracks?.().forEach(track => track.stop()); } catch (_) {}
+      micStream = null;
+      micVad = null;
+    }
+    const sideBtn = document.getElementById('mic');
+    sideBtn?.classList.toggle('on', false);
+    if (sideBtn) {
+      sideBtn.title = 'Micro';
+      sideBtn.setAttribute('aria-label', 'Micro');
+    }
+    const micLabel = document.getElementById('micLabel');
+    if (micLabel) micLabel.textContent = 'Micro';
+  }
+
+  async function requestMicrophonePermissionOnly() {
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) return false;
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+        },
+      });
+      stream.getTracks().forEach(track => track.stop());
+      micReady = true;
+      updateStartBtn();
+      return true;
+    } catch (e) {
+      alert('Micro indisponible : ' + e.message);
+      return false;
+    }
+  }
+
   async function goToLevelSelectWithMicCheck() {
     if (!levelsReady) return;
     ensureAudio();
@@ -2048,11 +2101,10 @@
     }
     const permissionState = await getMicrophonePermissionState();
     if (permissionState === 'granted') {
-      const enabled = await enableMic(true);
-      if (enabled && micReady) {
-        showLevelSelect();
-        return;
-      }
+      micReady = true;
+      updateStartBtn();
+      showLevelSelect();
+      return;
     }
     micPermissionDialog.classList.remove('hidden');
   }
@@ -2072,8 +2124,8 @@
   document.getElementById('micPermissionEnable').addEventListener('click', async () => {
     ensureAudio();
     unlockSpeech();
-    const enabled = await enableMic(true);
-    if (!enabled || !micReady) return;
+    const granted = await requestMicrophonePermissionOnly();
+    if (!granted) return;
     micPermissionDialog.classList.add('hidden');
     showLevelSelect();
   });
