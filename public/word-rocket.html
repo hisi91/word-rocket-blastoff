@@ -366,16 +366,10 @@
       <div id="loadStatus" class="loading">Chargement des niveaux...</div>
       <div class="start-options">
         <label class="opt-row">
-          <span class="lbl"><img class="label-icon" src="ui-icons/volume.png" alt="">Prononcer le nom à l'apparition
-            <span class="hint">L'objet est lu à voix haute quand il apparaît</span>
+          <span class="lbl"><img class="label-icon" src="ui-icons/help.png" alt="">Mode débutant
+            <span class="hint">Active l'aide audio et les choix multiples</span>
           </span>
-          <input type="checkbox" id="optSpeak" class="toggle" />
-        </label>
-        <label class="opt-row">
-          <span class="lbl"><img class="label-icon" src="ui-icons/menu.png" alt="">Choix multiples (QCM)
-            <span class="hint">Affiche 3 propositions à choisir</span>
-          </span>
-          <input type="checkbox" id="optText" class="toggle" />
+          <input type="checkbox" id="optBeginner" class="toggle" />
         </label>
       </div>
       <button class="big icon-text" id="startBtn" disabled><img class="ui-icon" src="ui-icons/play.png" alt="">JOUER</button>
@@ -387,6 +381,15 @@
           <br>Les noms ne sont PAS affichés : à toi de reconnaître l'icône !
           <br>Des niveaux courts, du sol jusqu'au cosmos.</div>
         <button type="button" class="info-got-it" id="infoGotIt">Got it</button>
+      </div>
+    </div>
+    <div class="info-modal hidden" id="beginnerDialog" role="dialog" aria-modal="true" aria-labelledby="beginnerTitle">
+      <div class="info-card">
+        <div class="info-title" id="beginnerTitle">Mode débutant</div>
+        <div class="subtitle start-info">Ce mode aide les nouveaux joueurs.
+          <br>Le mot est prononcé quand l'objet apparaît.
+          <br>Le jeu affiche aussi 3 réponses possibles à choisir.</div>
+        <button type="button" class="info-got-it" id="beginnerGotIt">Got it</button>
       </div>
     </div>
     <div class="info-modal hidden" id="micPermissionDialog" role="dialog" aria-modal="true" aria-labelledby="micPermissionTitle">
@@ -2033,9 +2036,8 @@
     }
   }
   document.getElementById('mic').addEventListener('click', () => { unlockSpeech(); enableMic(); });
-  document.getElementById('optSpeak').addEventListener('change', e => { speakOnAppear = e.target.checked; });
-  document.getElementById('optText').addEventListener('change', e => { choicesEnabled = e.target.checked; });
   const infoDialog = document.getElementById('infoDialog');
+  const beginnerDialog = document.getElementById('beginnerDialog');
   const micPermissionDialog = document.getElementById('micPermissionDialog');
 
   async function getMicrophonePermissionState() {
@@ -2117,6 +2119,18 @@
   });
   infoDialog.addEventListener('click', e => {
     if (e.target === infoDialog) infoDialog.classList.add('hidden');
+  });
+  document.getElementById('optBeginner').addEventListener('change', e => {
+    const enabled = e.target.checked;
+    speakOnAppear = enabled;
+    choicesEnabled = enabled;
+    if (enabled) beginnerDialog.classList.remove('hidden');
+  });
+  document.getElementById('beginnerGotIt').addEventListener('click', () => {
+    beginnerDialog.classList.add('hidden');
+  });
+  beginnerDialog.addEventListener('click', e => {
+    if (e.target === beginnerDialog) beginnerDialog.classList.add('hidden');
   });
   document.getElementById('micPermissionCancel').addEventListener('click', () => {
     micPermissionDialog.classList.add('hidden');
