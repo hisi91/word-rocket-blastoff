@@ -162,6 +162,9 @@
   .home-logo { position:relative; z-index:2; width:min(660px,92vw); height:auto; display:block;
     transform:rotate(-2deg); animation:logoBounce 2.6s ease-in-out infinite;
     filter:drop-shadow(0 14px 18px rgba(0,70,110,.22)); }
+  .level-select-logo { position:relative; z-index:2; width:min(900px,88vw); height:auto; display:block;
+    margin-top:8px; transform:rotate(-2deg); animation:logoBounce 2.6s ease-in-out infinite;
+    filter:drop-shadow(0 12px 16px rgba(0,70,110,.22)); }
   @keyframes logoBounce { 0%,100% { transform:rotate(-2deg) translateY(0); } 50% { transform:rotate(-1deg) translateY(-6px); } }
   .home-badge-row { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; }
   #start #homeRocketBalance { min-height:auto; padding:8px 14px; border-radius:999px;
@@ -279,6 +282,7 @@
     .level-home-btn { top:10px; left:10px; width:48px; height:48px; }
     .level-home-btn .ui-icon { width:42px; height:42px; }
     .level-grid { width:min(308px,94vw); grid-template-columns:repeat(2,126px); gap:14px 28px; max-height:72vh; }
+    .level-select-logo { width:min(360px,86vw); margin-top:12px; }
     #levelSelect .title { font-size:clamp(34px,11.5vw,54px); letter-spacing:1px; }
   }
   .end-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
@@ -378,7 +382,7 @@
     <div class="home-sky-rocket r2" aria-hidden="true"></div>
     <div class="home-sky-rocket r3" aria-hidden="true"></div>
     <button type="button" id="levelHomeBtn" class="level-home-btn" title="Home" aria-label="Home"><img class="ui-icon" src="ui-icons/home.png" alt=""></button>
-    <div class="title game-logo-style">LEVEL SELECT</div>
+    <img class="level-select-logo" src="assets/select-level-logo.webp" alt="SELECT LEVEL">
     <div id="levelRocketBalance" class="rocket-balance"></div>
     <div id="levelGrid" class="level-grid"></div>
   </div>
