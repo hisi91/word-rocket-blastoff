@@ -1544,12 +1544,7 @@
   function drawFalling(obj, now) {
     if (!state.paused) obj.y += obj.vy;
     drawImageContained(pctx, obj.img, obj.x, obj.y, ICON_SIZE);
-    // progress bar (no word shown!)
     const ratio = Math.max(0, Math.min(1, 1 - (obj.y + ICON_SIZE/2) / (obj.maxY + ICON_SIZE/2)));
-    const bw = ICON_SIZE - 16;
-    pctx.fillStyle = '#0008'; pctx.fillRect(obj.x - bw/2, obj.y + ICON_SIZE/2 + 6, bw, 6);
-    pctx.fillStyle = ratio < 0.3 ? '#f33' : ratio < 0.6 ? '#fa0' : '#0f8';
-    pctx.fillRect(obj.x - bw/2, obj.y + ICON_SIZE/2 + 6, bw * ratio, 6);
     if (!state.paused && ratio < 0.3 && now - obj.lastTick > 250) { SFX.tick(); obj.lastTick = now; }
     if (!state.paused && obj.y >= obj.maxY) loseLife();
   }
