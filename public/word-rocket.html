@@ -23,10 +23,14 @@
   .level { color: #7cf; }
   .rocket-stock-hud { display:inline-flex; align-items:center; gap:4px; color:#ffd54a; }
   .rocket-stock-hud .rocket-icon { font-size:18px; line-height:1; }
-  .rocket-balance { color:#fff; font-size:16px; line-height:1.4; text-align:center; text-shadow:0 0 8px #000; }
-  .rocket-balance .rockets { display:inline-block; letter-spacing:4px; margin-left:6px; white-space:nowrap; }
-  .rocket-balance .recharge { display:block; color:#fc6; font-size:12px; margin-top:3px; letter-spacing:1px; }
-  .rocket-balance.empty { color:#fc6; }
+  .rocket-balance { min-height:auto; padding:8px 14px; border-radius:999px;
+    background:rgba(255,255,255,.86); color:#5a2b00; border:3px solid #ffd45a;
+    box-shadow:0 5px 0 #d98010, 0 10px 18px rgba(47,104,132,.24); font-family:'Luckiest Guy','Courier New',monospace;
+    font-size:16px; line-height:1.4; text-align:center; text-shadow:none; letter-spacing:1px; }
+  .rocket-balance .rockets { display:inline-block; letter-spacing:2px; margin-left:6px; white-space:nowrap; }
+  .rocket-balance .recharge { display:block; color:#9b4f00; font-family:'Courier New',monospace;
+    font-size:12px; margin-top:3px; letter-spacing:1px; text-shadow:none; }
+  .rocket-balance.empty { color:#9b4f00; }
   .rocket-empty-modal { position:absolute; inset:0; z-index:45; display:flex; align-items:center; justify-content:center;
     padding:24px; background:rgba(0,0,10,.52); backdrop-filter:blur(4px); }
   .rocket-empty-modal.hidden { display:none; }
