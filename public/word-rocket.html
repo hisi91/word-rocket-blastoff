@@ -1313,7 +1313,7 @@
   // --- Groq Orpheus TTS (cached) with speechSynthesis fallback ---
   const ttsCache = new Map(); // text -> audio Blob
   const TTS_DEBUG = true; // Temporary: remove after mobile TTS fallback diagnosis.
-  let ttsAudio = null, ttsSource = null;
+  let ttsAudio = null, ttsSource = null, lastTtsFailure = '';
   function debugTTS(reason, detail = '') {
     if (!TTS_DEBUG) return;
     const message = detail ? `${reason}: ${detail}` : reason;
@@ -1326,6 +1326,7 @@
     } catch (_) {}
   }
   async function fetchTTS(text) {
+    lastTtsFailure = '';
     if (ttsCache.has(text)) {
       debugTTS('groq-cache-ok', text);
       return ttsCache.get(text);
@@ -1337,6 +1338,7 @@
         body: JSON.stringify({ text, voice: 'hannah' }),
       });
       if (!r.ok) {
+        lastTtsFailure = `http-error: ${r.status}`;
         debugTTS('http-error', String(r.status));
         return null;
       }
@@ -1346,11 +1348,13 @@
           const data = await r.clone().json();
           if (data?.error) error = data.error;
         } catch (_) {}
+        lastTtsFailure = `server-fallback: ${error}`;
         debugTTS('server-fallback', error);
         return null;
       }
       const blob = await r.blob();
       if (!blob.type.startsWith('audio/')) {
+        lastTtsFailure = `bad-content-type: ${blob.type || 'missing type'}`;
         debugTTS('bad-content-type', blob.type || 'missing type');
         return null;
       }
@@ -1358,7 +1362,9 @@
       ttsCache.set(text, blob);
       return blob;
     } catch (err) {
-      debugTTS('network-error', err?.message || String(err));
+      const message = err?.message || String(err);
+      lastTtsFailure = `network-error: ${message}`;
+      debugTTS('network-error', message);
       return null;
     }
   }
@@ -1418,7 +1424,7 @@
 
     const blob = await fetchTTS(text);
     if (mySeq !== speakSeq) return; // a newer speak() superseded us
-    if (!blob) { speakFallback(text, 'no-groq-blob'); return; }
+    if (!blob) { speakFallback(text, lastTtsFailure || 'no-groq-blob'); return; }
 
     const done = () => {
       speakingWord = false;
