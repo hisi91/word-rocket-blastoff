@@ -1312,22 +1312,55 @@
   }
   // --- Groq Orpheus TTS (cached) with speechSynthesis fallback ---
   const ttsCache = new Map(); // text -> audio Blob
+  const TTS_DEBUG = true; // Temporary: remove after mobile TTS fallback diagnosis.
   let ttsAudio = null, ttsSource = null;
+  function debugTTS(reason, detail = '') {
+    if (!TTS_DEBUG) return;
+    const message = detail ? `${reason}: ${detail}` : reason;
+    try { console.warn('[TTS debug]', message); } catch (_) {}
+    try {
+      const spoken = document.getElementById('spoken');
+      if (spoken && (state.screen === 'LEVEL_INTRO' || state.screen === 'PLAYING')) {
+        spoken.textContent = `TTS debug: ${message}`;
+      }
+    } catch (_) {}
+  }
   async function fetchTTS(text) {
-    if (ttsCache.has(text)) return ttsCache.get(text);
+    if (ttsCache.has(text)) {
+      debugTTS('groq-cache-ok', text);
+      return ttsCache.get(text);
+    }
     try {
       const r = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, voice: 'hannah' }),
       });
-      if (!r.ok) return null;
-      if (r.headers.get('x-tts-fallback') === 'true') return null;
+      if (!r.ok) {
+        debugTTS('http-error', String(r.status));
+        return null;
+      }
+      if (r.headers.get('x-tts-fallback') === 'true') {
+        let error = 'server fallback';
+        try {
+          const data = await r.clone().json();
+          if (data?.error) error = data.error;
+        } catch (_) {}
+        debugTTS('server-fallback', error);
+        return null;
+      }
       const blob = await r.blob();
-      if (!blob.type.startsWith('audio/')) return null;
+      if (!blob.type.startsWith('audio/')) {
+        debugTTS('bad-content-type', blob.type || 'missing type');
+        return null;
+      }
+      debugTTS('groq-ok', `${blob.type}, ${blob.size} bytes`);
       ttsCache.set(text, blob);
       return blob;
-    } catch { return null; }
+    } catch (err) {
+      debugTTS('network-error', err?.message || String(err));
+      return null;
+    }
   }
   async function decodeAudioBlob(blob) {
     ensureAudio();
@@ -1354,8 +1387,10 @@
       onDone();
     };
     source.start();
+    debugTTS('web-audio-started', `state=${actx?.state || 'unknown'}`);
   }
-  function speakFallback(text) {
+  function speakFallback(text, reason = 'fallback') {
+    debugTTS('speech-synthesis-fallback', reason);
     try {
       if (!text || !('speechSynthesis' in window)) return;
       window.speechSynthesis.cancel();
@@ -1383,7 +1418,7 @@
 
     const blob = await fetchTTS(text);
     if (mySeq !== speakSeq) return; // a newer speak() superseded us
-    if (!blob) { speakFallback(text); return; }
+    if (!blob) { speakFallback(text, 'no-groq-blob'); return; }
 
     const done = () => {
       speakingWord = false;
@@ -1391,8 +1426,8 @@
     };
     try {
       await playGroqTTS(blob, done);
-    } catch {
-      speakFallback(text);
+    } catch (err) {
+      speakFallback(text, `web-audio-failed: ${err?.message || String(err)}`);
     }
   }
 
