@@ -97,6 +97,7 @@
   #spoken { min-height:22px; padding:4px 12px; border-radius:999px; font-size:13px; color:var(--ui-text);
     opacity:.96; text-align:center; text-shadow:none; background:rgba(255,255,255,.72);
     border:2px solid rgba(255,212,90,.72); box-shadow:0 3px 0 rgba(185,74,0,.42); }
+  #spoken.empty { visibility:hidden; }
   .feedback { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%);
     font-size: 36px; font-weight: bold; opacity: 0; pointer-events: none; z-index: 20;
     text-shadow: 0 0 20px currentColor, 0 0 4px #000; }
@@ -369,7 +370,7 @@
   </div>
 
   <div class="bottom">
-    <div id="spoken"></div>
+    <div id="spoken" class="empty"></div>
     <div id="choices"></div>
   </div>
   <div class="top-controls" id="topControls" style="display:none">
@@ -1238,6 +1239,12 @@
     });
   }
 
+  function setSpokenText(text = '') {
+    const el = document.getElementById('spoken');
+    el.textContent = text;
+    el.classList.toggle('empty', !text);
+  }
+
   function showStartPrompt() {
     const el = document.getElementById('startPrompt');
     if (el) { el.textContent = '🎤 Dis "START" pour décoller 🚀'; el.classList.add('show'); }
@@ -1278,7 +1285,7 @@
       return endGame(true);
     }
     state.current = newFalling();
-    document.getElementById('spoken').textContent = '';
+    setSpokenText('');
     if (speakOnAppear) speak(state.current.word);
     if (choicesEnabled) showChoices(state.current.word);
     else hideChoices();
@@ -1290,7 +1297,7 @@
     if (!state.running) return;
     const t = norm(text);
     if (!t) return;
-    document.getElementById('spoken').textContent = '🎙 ' + text;
+    setSpokenText('🎙 ' + text);
     if (!state.current) return;
     if (t === norm(state.current.word)) hitTarget();
   }
@@ -1998,26 +2005,26 @@
     busy = true;
     try { if (micVad) micVad.pause(); } catch (_) {}
     try {
-      document.getElementById('spoken').textContent = '⏳ Analyse...';
+      setSpokenText('⏳ Analyse...');
       const audioBlob = await prepareSpeechBlob(float32);
       const rawHeard = (await transcribe(audioBlob)).trim();
       const heard = normalizeSingleWordTranscript(rawHeard);
       if (!heard) return;
       if (state.awaitingStart) {
-        document.getElementById('spoken').textContent = `🎙 ${heard}`;
+        setSpokenText(`🎙 ${heard}`);
         checkWord(heard);
         return;
       }
       const expected = state.current?.word || '';
       const sc = score(heard, expected, LANGS[langIdx][0]);
-      document.getElementById('spoken').textContent = `🎙 ${heard} (${sc}%)`;
+      setSpokenText(`🎙 ${heard} (${sc}%)`);
       if (sc >= ACCEPT_THRESHOLD) checkWord(expected); // force-validate
       else if (expected) {
         showFeedback('ÉCOUTE : ' + expected.toUpperCase(), '#fc6');
         speak(expected);
       }
     } catch (e) {
-      document.getElementById('spoken').textContent = '⚠️ ' + e.message;
+      setSpokenText('⚠️ ' + e.message);
     } finally {
       busy = false;
       if (recOn && micVad && state.running) {
@@ -2061,7 +2068,7 @@
       onnxWASMBasePath: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/',
       onSpeechStart: () => {
         if (busy) return;
-        if (state.running) document.getElementById('spoken').textContent = "🎙 Je t'écoute...";
+        if (state.running) setSpokenText("🎙 Je t'écoute...");
         startSpeechRecording();
       },
       onSpeechEnd: (audio) => { handleUtterance(audio); },
