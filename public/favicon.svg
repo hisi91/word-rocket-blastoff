@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Word Rocket W">
+  <defs>
+    <filter id="shadow" x="-20%" y="-10%" width="140%" height="130%">
+      <feDropShadow dx="18" dy="24" stdDeviation="0" flood-color="#8a4300" flood-opacity="0.95"/>
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#321500" flood-opacity="0.5"/>
+    </filter>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff36a"/>
+      <stop offset="0.42" stop-color="#ffd427"/>
+      <stop offset="1" stop-color="#ff9f00"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffef2" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#fffef2" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <path
+    d="M72 80 L142 80 L172 298 L218 80 L292 80 L338 298 L370 80 L440 80 L376 432 L304 432 L256 218 L208 432 L136 432 Z"
+    fill="#4b2200"
+    filter="url(#shadow)"
+    transform="rotate(-4 256 256)"
+  />
+  <path
+    d="M72 80 L142 80 L172 298 L218 80 L292 80 L338 298 L370 80 L440 80 L376 432 L304 432 L256 218 L208 432 L136 432 Z"
+    fill="url(#gold)"
+    stroke="#6b2f00"
+    stroke-width="24"
+    stroke-linejoin="round"
+    transform="rotate(-4 256 256)"
+  />
+  <path
+    d="M112 112 L130 112 L158 308 L208 112 L234 112 L182 356 L160 356 Z"
+    fill="url(#shine)"
+    transform="rotate(-4 256 256)"
+  />
+  <path
+    d="M266 112 L286 112 L332 326 L366 112 L388 112 L348 356 L326 356 Z"
+    fill="#fff6a8"
+    opacity="0.34"
+    transform="rotate(-4 256 256)"
+  />
+</svg>
