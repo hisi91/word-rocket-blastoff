@@ -32,25 +32,15 @@ Si le jeu s'affiche, c'est bon. Si une page vide, une erreur ou une boucle ifram
 
 ### 2. Ajouter les secrets et variables Cloudflare
 
-Le workflow GitHub envoie actuellement seulement:
+Le workflow GitHub envoie actuellement:
 
 ```txt
 GROQ_API_KEY
 ```
 
-Le code utilise aussi les variables suivantes:
-
-```txt
-SUPABASE_URL
-SUPABASE_PUBLISHABLE_KEY
-VITE_SUPABASE_URL
-VITE_SUPABASE_PUBLISHABLE_KEY
-SUPABASE_SERVICE_ROLE_KEY
-```
-
 `GROQ_API_KEY` est necessaire pour Whisper, TTS et le ping Groq.
 
-Les variables Supabase sont necessaires pour `/auth`, `/upload` et l'integration Supabase cote app/SSR.
+Les routes admin `/auth` et `/upload` ont ete retirees. Le jeu charge les niveaux et les icones depuis Supabase via les constantes publiques dans `public/word-rocket.html`.
 
 ### 3. Garder le bon build command
 
@@ -67,13 +57,12 @@ bun install && bunx vite build
 Cote Supabase, il faut que tout soit present en production:
 
 ```txt
-tables: levels, level_objects, user_roles
+tables: levels, level_objects
 storage bucket: game-icons
-RLS policies: upload autorise pour admin
-compte utilisateur: role admin
+RLS policies: lecture publique des niveaux et icones
 ```
 
-Le jeu peut tourner sans `/upload`, mais l'upload d'icones depuis l'interface depend de ces elements.
+L'upload d'icones depuis l'interface a ete retire pour simplifier l'hebergement.
 
 ### 5. Verifier les APIs
 
@@ -83,13 +72,9 @@ Verifier rapidement les routes suivantes:
 /api/transcribe
 /api/tts
 /api/ping-groq
-/auth
-/upload
 ```
 
 Si `/api/ping-groq` echoue, c'est souvent `GROQ_API_KEY` qui manque.
-
-Si `/auth` ou `/upload` echoue, c'est souvent lie aux variables Supabase ou aux policies RLS.
 
 ### 6. Ajouter un domaine final
 
