@@ -206,13 +206,13 @@
   #start .info-toggle { width:48px; height:48px; padding:0; border-radius:50%; border:3px solid #fff7b4;
     background:linear-gradient(#ff78c7,#e52698); color:#fff7b4; font-family:'Luckiest Guy','Courier New',monospace;
     font-size:0; box-shadow:0 5px 0 #8c185d, 0 10px 16px rgba(47,104,132,.22);
-    display:grid; place-items:center; }
-  #start .info-toggle::before { content:'?'; display:block; font-size:28px; line-height:1;
-    transform:translateY(1px); text-shadow:0 2px 0 #8c185d; }
+    display:flex; align-items:center; justify-content:center; }
+  #start .info-toggle::before { content:'?'; display:block; font-size:31px; line-height:.8;
+    transform:translateY(2px); text-shadow:0 2px 0 #8c185d; }
   #start .home-share-toggle { width:48px; height:48px; padding:0; border-radius:50%; border:3px solid #fff7b4;
     background:#ff982d; box-shadow:0 5px 0 #b94a00, 0 10px 16px rgba(47,104,132,.22);
     display:grid; place-items:center; cursor:pointer; overflow:hidden; }
-  #start .home-share-toggle img { width:100%; height:100%; display:block; object-fit:cover; border-radius:50%; }
+  #start .home-share-toggle img { width:118%; height:118%; display:block; object-fit:cover; border-radius:50%; }
   #start .home-share-toggle:hover, #start .info-toggle:hover { transform:translateY(-2px); filter:saturate(1.08); }
   #start .info-modal { position:absolute; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
     padding:22px; background:rgba(0,45,80,.28); backdrop-filter:blur(2px); }
