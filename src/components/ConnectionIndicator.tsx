@@ -17,7 +17,7 @@ const PING_TIMEOUT_MS = 4500;
 const STATUS_ICONS: Record<ConnectionStatus, string> = {
   good: "/assets/latency-good.webp",
   degraded: "/assets/latency-medium.webp",
-  poor: "/assets/latency-bad.png",
+  poor: "/assets/latency-bad.webp",
   offline: "/assets/latency-off.webp",
 };
 

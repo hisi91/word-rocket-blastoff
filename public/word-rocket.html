@@ -326,7 +326,7 @@
     80% { transform:translateX(5px) rotate(1deg); }
   }
   .level-frame { position:relative; width:126px; aspect-ratio:1; display:grid;
-    place-items:center; background:url('assets/cadre.png') center 76% / auto 184px no-repeat; }
+    place-items:center; background:url('assets/cadre.webp') center 76% / auto 184px no-repeat; }
   .level-number { font-family:'Luckiest Guy','Courier New',monospace; font-size:50px;
     color:#3d1a00; line-height:1; -webkit-text-stroke:2px #f6cf51;
     text-shadow:0 3px 0 #f6cf51, 0 5px 0 rgba(83,34,0,.18); transform:translateY(5px); }
@@ -1098,7 +1098,7 @@
     }
     const earnedStars = starsForMistakes(state.missed.length);
     starsEl.innerHTML = Array.from({ length: earnedStars }, () =>
-      '<img class="end-star" src="assets/star.png" alt="">'
+      '<img class="end-star" src="assets/star.webp" alt="">'
     ).join('');
     starsEl.classList.remove('hidden');
     starsEl.setAttribute('aria-label', `${earnedStars} étoile${earnedStars > 1 ? 's' : ''} gagnée${earnedStars > 1 ? 's' : ''}`);
@@ -1154,13 +1154,13 @@
       card.type = 'button';
       card.className = 'level-card ' + (unlocked ? 'unlocked' : 'locked');
       card.setAttribute('aria-label', unlocked ? `Level ${levelNumber}` : `Level ${levelNumber} locked`);
-      const starIcons = Array.from({ length: stars }, () => '<img class="level-star" src="assets/star.png" alt="">').join('');
+      const starIcons = Array.from({ length: stars }, () => '<img class="level-star" src="assets/star.webp" alt="">').join('');
       card.innerHTML =
         `<div class="level-stars" aria-hidden="true">${starIcons}</div>
         <div class="level-frame">
           ${unlocked
             ? `<span class="level-number">${levelNumber}</span>`
-            : '<img class="level-lock" src="assets/cadnat.png" alt="">'}
+            : '<img class="level-lock" src="assets/cadnat.webp" alt="">'}
         </div>`;
       card.addEventListener('click', () => {
         if (unlocked) {
