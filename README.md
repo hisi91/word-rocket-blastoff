@@ -84,10 +84,11 @@ bun run lint
 | Variable | Où | Description |
 |---|---|---|
 | `GROQ_API_KEY` | Runtime (server) | Clé Groq pour Whisper. Gratuite sur [console.groq.com](https://console.groq.com) |
-| `VITE_SUPABASE_URL` | Build + runtime | URL Supabase si le shell React utilise le client Supabase |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Build + runtime | Clé publique Supabase si le shell React utilise le client Supabase |
+| `VITE_SUPABASE_URL` | Build + runtime | Auto-généré par Lovable Cloud |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Build + runtime | Auto-généré par Lovable Cloud |
+| `SUPABASE_SERVICE_ROLE_KEY` | Runtime (server) | Auto-généré par Lovable Cloud |
 
-Le jeu principal lit les niveaux directement depuis `public/word-rocket.html`. En local, ajoute les variables Supabase dans `.env` seulement si tu réactives des routes React qui utilisent Supabase.
+Sur Lovable, ces secrets sont gérés via **Cloud → Settings**. En local, ajoute-les dans `.env`.
 
 ---
 
