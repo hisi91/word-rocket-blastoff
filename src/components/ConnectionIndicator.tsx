@@ -118,7 +118,7 @@ export function ConnectionIndicator({ visible }: { visible: boolean }) {
     const start = () => {
       if (intervalId || document.hidden) return;
       void ping();
-      intervalId = window.setInterval(() => {
+      intervalId = setInterval(() => {
         void ping();
       }, PING_INTERVAL_MS);
     };
