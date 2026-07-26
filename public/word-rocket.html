@@ -209,6 +209,13 @@
     display:grid; place-items:center; }
   #start .info-toggle::before { content:'?'; display:block; font-size:28px; line-height:1;
     transform:translateY(1px); text-shadow:0 2px 0 #8c185d; }
+  #start .home-share-toggle { width:48px; height:48px; padding:0; border-radius:50%; border:3px solid #fff7b4;
+    background:linear-gradient(#ffb13b,#ff7b1a); color:#fff; font-family:'Luckiest Guy','Courier New',monospace;
+    font-size:0; box-shadow:0 5px 0 #b94a00, 0 10px 16px rgba(47,104,132,.22);
+    display:grid; place-items:center; cursor:pointer; }
+  #start .home-share-toggle::before { content:'↗'; display:block; font-size:25px; line-height:1;
+    transform:translateY(-1px); text-shadow:0 2px 0 #8c3900; }
+  #start .home-share-toggle:hover, #start .info-toggle:hover { transform:translateY(-2px); filter:saturate(1.08); }
   #start .info-modal { position:absolute; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
     padding:22px; background:rgba(0,45,80,.28); backdrop-filter:blur(2px); }
   #start .info-modal.hidden { display:none; }
@@ -406,6 +413,7 @@
       <img class="home-logo" src="assets/word-rocket-logo.webp" alt="WORD ROCKET">
       <div class="home-badge-row">
         <div id="homeRocketBalance" class="rocket-balance"></div>
+        <button type="button" class="home-share-toggle" id="homeShareBtn" aria-label="Partager le jeu">PARTAGER</button>
         <button type="button" class="info-toggle" id="infoBtn">INFORMATION</button>
       </div>
       <div id="loadStatus" class="loading">Chargement des niveaux...</div>
@@ -1166,6 +1174,44 @@
         shareButton.disabled = false;
         shareButton.textContent = 'Partager le jeu';
       }
+    }
+  }
+
+  function showHomeShareStatus(message) {
+    const status = document.getElementById('loadStatus');
+    if (!status) return;
+    const previous = status.textContent;
+    status.textContent = message;
+    clearTimeout(showHomeShareStatus.timer);
+    showHomeShareStatus.timer = setTimeout(() => {
+      if (status.textContent === message) status.textContent = previous;
+    }, 2200);
+  }
+
+  async function shareGameFromHome() {
+    const shareData = {
+      title: 'Word Rocket',
+      text: 'Viens jouer à Word Rocket 🚀 Un jeu fun pour apprendre à prononcer les mots anglais en lançant une fusée !',
+      url: GAME_SHARE_URL,
+    };
+    const shareButton = document.getElementById('homeShareBtn');
+    if (shareButton) shareButton.disabled = true;
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        showHomeShareStatus('Merci pour le partage !');
+        return;
+      }
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(GAME_SHARE_URL);
+        showHomeShareStatus('Lien copié !');
+        return;
+      }
+      showHomeShareStatus('Copie ce lien: wordrocket.space');
+    } catch (_) {
+      showHomeShareStatus('Partage annulé');
+    } finally {
+      if (shareButton) shareButton.disabled = false;
     }
   }
 
@@ -2313,6 +2359,7 @@
   document.getElementById('infoBtn').addEventListener('click', () => {
     infoDialog.classList.remove('hidden');
   });
+  document.getElementById('homeShareBtn').addEventListener('click', shareGameFromHome);
   document.getElementById('infoGotIt').addEventListener('click', () => {
     infoDialog.classList.add('hidden');
   });
