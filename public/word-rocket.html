@@ -205,9 +205,9 @@
   .home-badge-row { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; }
   #start .info-toggle { width:48px; height:48px; padding:0; border-radius:50%; border:3px solid #fff7b4;
     background:linear-gradient(#ff78c7,#e52698); color:#fff7b4; font-family:'Luckiest Guy','Courier New',monospace;
-    font-size:0; box-shadow:0 5px 0 #8c185d, 0 10px 16px rgba(47,104,132,.22);
+    font-size:0; line-height:1; box-shadow:0 5px 0 #8c185d, 0 10px 16px rgba(47,104,132,.22);
     display:flex; align-items:center; justify-content:center; }
-  #start .info-toggle::before { content:'?'; display:block; font-size:31px; line-height:.8;
+  #start .info-toggle .info-mark { display:block; width:100%; text-align:center; font-size:31px; line-height:1;
     transform:translateY(2px); text-shadow:0 2px 0 #8c185d; }
   #start .home-share-toggle { width:48px; height:48px; padding:0; border-radius:50%; border:3px solid #fff7b4;
     background:#ff982d; box-shadow:0 5px 0 #b94a00, 0 10px 16px rgba(47,104,132,.22);
@@ -414,7 +414,7 @@
         <button type="button" class="home-share-toggle" id="homeShareBtn" aria-label="Partager le jeu">
           <img src="assets/share-button.webp" alt="">
         </button>
-        <button type="button" class="info-toggle" id="infoBtn">INFORMATION</button>
+        <button type="button" class="info-toggle" id="infoBtn" aria-label="Information"><span class="info-mark">?</span></button>
       </div>
       <div id="loadStatus" class="loading">Chargement des niveaux...</div>
       <div class="start-options">
