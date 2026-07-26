@@ -232,6 +232,10 @@
     text-shadow:0 2px 0 #8c3900; box-shadow:0 5px 0 #b94a00; }
   #start .permission-btn.secondary { background:rgba(255,255,255,.9); color:#5a2b00;
     text-shadow:none; box-shadow:0 5px 0 #d98010; }
+  #start .privacy-link { position:relative; z-index:2; border:0; background:transparent; color:#5a2b00;
+    font-family:'Courier New',monospace; font-size:13px; font-weight:bold; text-decoration:underline;
+    text-shadow:0 1px 0 rgba(255,255,255,.7); cursor:pointer; padding:4px 8px; }
+  #start .privacy-link:hover { color:#9b4f00; }
   #start .loading { position:relative; z-index:2; min-height:22px; color:#0d6f8d; font-weight:bold;
     text-shadow:0 1px 0 #fff; }
   #start .start-options { position:relative; z-index:2; width:min(520px,92vw); gap:9px; padding:12px 14px;
@@ -414,6 +418,7 @@
         </label>
       </div>
       <button class="big icon-text" id="startBtn" disabled><img class="ui-icon" src="ui-icons/play.png" alt="">JOUER</button>
+      <button type="button" class="privacy-link" id="privacyBtn">Confidentialité</button>
     </div>
     <div class="info-modal hidden" id="infoDialog" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
       <div class="info-card">
@@ -422,6 +427,17 @@
           <br>Les noms ne sont PAS affichés : à toi de reconnaître l'icône !
           <br>Des niveaux courts, du sol jusqu'au cosmos.</div>
         <button type="button" class="info-got-it" id="infoGotIt">Got it</button>
+      </div>
+    </div>
+    <div class="info-modal hidden" id="privacyDialog" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">
+      <div class="info-card">
+        <div class="info-title" id="privacyTitle">Confidentialité</div>
+        <div class="subtitle start-info">
+          Word Rocket utilise le microphone uniquement pendant les niveaux pour reconnaître le mot prononcé.
+          <br>L'audio est envoyé à Groq pour transcription afin de vérifier la prononciation.
+          <br>Les enregistrements audio ne sont pas affichés publiquement dans le jeu.
+        </div>
+        <button type="button" class="info-got-it" id="privacyGotIt">Got it</button>
       </div>
     </div>
     <div class="info-modal hidden" id="beginnerDialog" role="dialog" aria-modal="true" aria-labelledby="beginnerTitle">
@@ -2219,6 +2235,7 @@
   }
   document.getElementById('mic').addEventListener('click', () => { unlockSpeech(); enableMic(); });
   const infoDialog = document.getElementById('infoDialog');
+  const privacyDialog = document.getElementById('privacyDialog');
   const beginnerDialog = document.getElementById('beginnerDialog');
   const micPermissionDialog = document.getElementById('micPermissionDialog');
 
@@ -2301,6 +2318,15 @@
   });
   infoDialog.addEventListener('click', e => {
     if (e.target === infoDialog) infoDialog.classList.add('hidden');
+  });
+  document.getElementById('privacyBtn').addEventListener('click', () => {
+    privacyDialog.classList.remove('hidden');
+  });
+  document.getElementById('privacyGotIt').addEventListener('click', () => {
+    privacyDialog.classList.add('hidden');
+  });
+  privacyDialog.addEventListener('click', e => {
+    if (e.target === privacyDialog) privacyDialog.classList.add('hidden');
   });
   document.getElementById('optBeginner').addEventListener('change', e => {
     const enabled = e.target.checked;
