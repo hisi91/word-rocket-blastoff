@@ -97,6 +97,7 @@
   #spoken { min-height:22px; padding:4px 12px; border-radius:999px; font-size:13px; color:var(--ui-text);
     opacity:.96; text-align:center; text-shadow:none; background:rgba(255,255,255,.72);
     border:2px solid rgba(255,212,90,.72); box-shadow:0 3px 0 rgba(185,74,0,.42); }
+  #spoken.empty { visibility:hidden; }
   .feedback { position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%);
     font-size: 36px; font-weight: bold; opacity: 0; pointer-events: none; z-index: 20;
     text-shadow: 0 0 20px currentColor, 0 0 4px #000; }
@@ -204,10 +205,15 @@
   .home-badge-row { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; }
   #start .info-toggle { width:48px; height:48px; padding:0; border-radius:50%; border:3px solid #fff7b4;
     background:linear-gradient(#ff78c7,#e52698); color:#fff7b4; font-family:'Luckiest Guy','Courier New',monospace;
-    font-size:0; box-shadow:0 5px 0 #8c185d, 0 10px 16px rgba(47,104,132,.22);
-    display:grid; place-items:center; }
-  #start .info-toggle::before { content:'?'; display:block; font-size:28px; line-height:1;
-    transform:translateY(1px); text-shadow:0 2px 0 #8c185d; }
+    font-size:0; line-height:1; box-shadow:0 5px 0 #8c185d, 0 10px 16px rgba(47,104,132,.22);
+    display:flex; align-items:center; justify-content:center; }
+  #start .info-toggle .info-mark { display:block; width:100%; text-align:center; font-size:31px; line-height:1;
+    transform:translateY(2px); text-shadow:0 2px 0 #8c185d; }
+  #start .home-share-toggle { width:48px; height:48px; padding:0; border-radius:50%; border:3px solid #fff7b4;
+    background:#ff982d; box-shadow:0 5px 0 #b94a00, 0 10px 16px rgba(47,104,132,.22);
+    display:grid; place-items:center; cursor:pointer; overflow:hidden; }
+  #start .home-share-toggle img { width:118%; height:118%; display:block; object-fit:cover; border-radius:50%; }
+  #start .home-share-toggle:hover, #start .info-toggle:hover { transform:translateY(-2px); filter:saturate(1.08); }
   #start .info-modal { position:absolute; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
     padding:22px; background:rgba(0,45,80,.28); backdrop-filter:blur(2px); }
   #start .info-modal.hidden { display:none; }
@@ -231,6 +237,10 @@
     text-shadow:0 2px 0 #8c3900; box-shadow:0 5px 0 #b94a00; }
   #start .permission-btn.secondary { background:rgba(255,255,255,.9); color:#5a2b00;
     text-shadow:none; box-shadow:0 5px 0 #d98010; }
+  #start .privacy-link { position:relative; z-index:2; border:0; background:transparent; color:#5a2b00;
+    font-family:'Courier New',monospace; font-size:13px; font-weight:bold; text-decoration:underline;
+    text-shadow:0 1px 0 rgba(255,255,255,.7); cursor:pointer; padding:4px 8px; }
+  #start .privacy-link:hover { color:#9b4f00; }
   #start .loading { position:relative; z-index:2; min-height:22px; color:#0d6f8d; font-weight:bold;
     text-shadow:0 1px 0 #fff; }
   #start .start-options { position:relative; z-index:2; width:min(520px,92vw); gap:9px; padding:12px 14px;
@@ -325,7 +335,7 @@
     80% { transform:translateX(5px) rotate(1deg); }
   }
   .level-frame { position:relative; width:126px; aspect-ratio:1; display:grid;
-    place-items:center; background:url('assets/cadre.png') center 76% / auto 184px no-repeat; }
+    place-items:center; background:url('assets/cadre.webp') center 76% / auto 184px no-repeat; }
   .level-number { font-family:'Luckiest Guy','Courier New',monospace; font-size:50px;
     color:#3d1a00; line-height:1; -webkit-text-stroke:2px #f6cf51;
     text-shadow:0 3px 0 #f6cf51, 0 5px 0 rgba(83,34,0,.18); transform:translateY(5px); }
@@ -369,7 +379,7 @@
   </div>
 
   <div class="bottom">
-    <div id="spoken"></div>
+    <div id="spoken" class="empty"></div>
     <div id="choices"></div>
   </div>
   <div class="top-controls" id="topControls" style="display:none">
@@ -401,7 +411,10 @@
       <img class="home-logo" src="assets/word-rocket-logo.webp" alt="WORD ROCKET">
       <div class="home-badge-row">
         <div id="homeRocketBalance" class="rocket-balance"></div>
-        <button type="button" class="info-toggle" id="infoBtn">INFORMATION</button>
+        <button type="button" class="home-share-toggle" id="homeShareBtn" aria-label="Partager le jeu">
+          <img src="assets/share-button.webp" alt="">
+        </button>
+        <button type="button" class="info-toggle" id="infoBtn" aria-label="Information"><span class="info-mark">?</span></button>
       </div>
       <div id="loadStatus" class="loading">Chargement des niveaux...</div>
       <div class="start-options">
@@ -413,6 +426,7 @@
         </label>
       </div>
       <button class="big icon-text" id="startBtn" disabled><img class="ui-icon" src="ui-icons/play.png" alt="">JOUER</button>
+      <button type="button" class="privacy-link" id="privacyBtn">Confidentialité</button>
     </div>
     <div class="info-modal hidden" id="infoDialog" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
       <div class="info-card">
@@ -421,6 +435,17 @@
           <br>Les noms ne sont PAS affichés : à toi de reconnaître l'icône !
           <br>Des niveaux courts, du sol jusqu'au cosmos.</div>
         <button type="button" class="info-got-it" id="infoGotIt">Got it</button>
+      </div>
+    </div>
+    <div class="info-modal hidden" id="privacyDialog" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">
+      <div class="info-card">
+        <div class="info-title" id="privacyTitle">Confidentialité</div>
+        <div class="subtitle start-info">
+          Word Rocket utilise le microphone uniquement pendant les niveaux pour reconnaître le mot prononcé.
+          <br>L'audio est envoyé à un service sécurisé de transcription afin de vérifier la prononciation.
+          <br>Les enregistrements audio ne sont pas affichés publiquement dans le jeu.
+        </div>
+        <button type="button" class="info-got-it" id="privacyGotIt">Got it</button>
       </div>
     </div>
     <div class="info-modal hidden" id="beginnerDialog" role="dialog" aria-modal="true" aria-labelledby="beginnerTitle">
@@ -502,8 +527,12 @@
   const LEVEL_OBJECTS_CACHE_KEY = 'wr_level_objects_v1';
   const PROGRESS_KEY = 'wr_level_progress_v1';
   const ROCKET_BALANCE_KEY = 'wr_rocket_balance_v1';
+  const ROCKET_SHARE_REWARDS_KEY = 'wr_rocket_share_rewards_v1';
   const MAX_ROCKET_BALANCE = 5;
   const ROCKET_REGEN_MS = 60 * 60 * 1000;
+  const SHARE_REWARD_LIMIT = 3;
+  const SHARE_REWARD_WINDOW_MS = 24 * 60 * 60 * 1000;
+  const GAME_SHARE_URL = 'https://wordrocket.space';
   const LEVELS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
   const LEVELS_FETCH_TIMEOUT = 3500;
   function objectsForLevel(levelNumber) {
@@ -974,6 +1003,47 @@
     try { localStorage.setItem(ROCKET_BALANCE_KEY, JSON.stringify(rocketBalance)); } catch {}
   }
 
+  function normalizeShareRewards(raw) {
+    const now = Date.now();
+    const windowStart = Number(raw?.windowStart);
+    const rewards = Number(raw?.rewards);
+    if (!Number.isFinite(windowStart) || now - windowStart >= SHARE_REWARD_WINDOW_MS) {
+      return { windowStart: now, rewards: 0 };
+    }
+    return {
+      windowStart,
+      rewards: Number.isFinite(rewards) ? Math.max(0, Math.min(SHARE_REWARD_LIMIT, rewards)) : 0,
+    };
+  }
+
+  function loadShareRewards() {
+    try {
+      return normalizeShareRewards(JSON.parse(localStorage.getItem(ROCKET_SHARE_REWARDS_KEY) || 'null'));
+    } catch {
+      return { windowStart: Date.now(), rewards: 0 };
+    }
+  }
+
+  function saveShareRewards(shareRewards) {
+    try { localStorage.setItem(ROCKET_SHARE_REWARDS_KEY, JSON.stringify(shareRewards)); } catch {}
+  }
+
+  function shareRewardsRemaining() {
+    const shareRewards = normalizeShareRewards(loadShareRewards());
+    saveShareRewards(shareRewards);
+    return Math.max(0, SHARE_REWARD_LIMIT - shareRewards.rewards);
+  }
+
+  function nextShareRewardWindowText() {
+    const shareRewards = normalizeShareRewards(loadShareRewards());
+    if (shareRewards.rewards < SHARE_REWARD_LIMIT) return '';
+    const remaining = Math.max(0, SHARE_REWARD_WINDOW_MS - (Date.now() - shareRewards.windowStart));
+    const totalMinutes = Math.ceil(remaining / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return hours > 0 ? `${hours}h ${String(minutes).padStart(2, '0')}` : `${minutes} min`;
+  }
+
   function refreshRocketBalance() {
     rocketBalance = normalizeRocketBalance(rocketBalance);
     saveRocketBalance();
@@ -1022,7 +1092,11 @@
     const text = document.getElementById('rocketEmptyText');
     const timer = document.getElementById('rocketRechargeTimer');
     if (!modal || !text || !timer) return;
-    text.innerHTML = `Il ne reste plus de rockets. Prochaine rocket dans <span class="rocket-empty-time" id="rocketRechargeTimer">${formatRocketWait(nextRocketRemainingMs())}</span>.`;
+    const remainingShares = shareRewardsRemaining();
+    const shareHint = remainingShares > 0
+      ? `<br>Partage le jeu pour gagner 1 rocket bonus (${remainingShares}/${SHARE_REWARD_LIMIT} aujourd'hui).`
+      : `<br>Bonus partage déjà utilisé. Prochain bonus dans <span class="rocket-empty-time">${nextShareRewardWindowText()}</span>.`;
+    text.innerHTML = `Il ne reste plus de rockets. Prochaine rocket dans <span class="rocket-empty-time" id="rocketRechargeTimer">${formatRocketWait(nextRocketRemainingMs())}</span>.${shareHint}`;
     modal.classList.remove('hidden');
     clearInterval(rocketEmptyTimer);
     rocketEmptyTimer = setInterval(updateRocketEmptyModal, 1000);
@@ -1038,8 +1112,107 @@
   function showRocketEmptyPlaceholder(kind) {
     const text = document.getElementById('rocketEmptyText');
     if (!text) return;
-    const label = kind === 'share' ? 'Le partage du jeu arrive bientôt.' : 'L’achat de rockets arrive bientôt.';
+    const label = kind === 'share' ? 'Le partage vérifié n’est pas disponible sur ce navigateur.' : 'L’achat de rockets arrive bientôt.';
     text.innerHTML = `${label}<br>Prochaine rocket gratuite dans <span class="rocket-empty-time" id="rocketRechargeTimer">${formatRocketWait(nextRocketRemainingMs())}</span>.`;
+  }
+
+  function setRocketEmptyText(message) {
+    const text = document.getElementById('rocketEmptyText');
+    if (!text) return;
+    text.innerHTML = `${message}<br>Prochaine rocket gratuite dans <span class="rocket-empty-time" id="rocketRechargeTimer">${formatRocketWait(nextRocketRemainingMs())}</span>.`;
+  }
+
+  async function shareGameForRocket() {
+    refreshRocketBalance();
+    if (rocketBalance.count >= MAX_ROCKET_BALANCE) {
+      setRocketEmptyText('Ton solde est déjà plein.');
+      return;
+    }
+
+    const shareRewards = normalizeShareRewards(loadShareRewards());
+    if (shareRewards.rewards >= SHARE_REWARD_LIMIT) {
+      saveShareRewards(shareRewards);
+      setRocketEmptyText(`Tu as déjà gagné ${SHARE_REWARD_LIMIT} rockets avec le partage aujourd'hui. Prochain bonus dans <span class="rocket-empty-time">${nextShareRewardWindowText()}</span>.`);
+      return;
+    }
+
+    if (!navigator.share) {
+      showRocketEmptyPlaceholder('share');
+      return;
+    }
+
+    const shareButton = document.getElementById('shareRocketBtn');
+    if (shareButton) {
+      shareButton.disabled = true;
+      shareButton.textContent = 'Partage...';
+    }
+
+    try {
+      await navigator.share({
+        title: 'Word Rocket',
+        text: 'Viens jouer à Word Rocket 🚀 Un jeu fun pour apprendre à prononcer les mots anglais en lançant une fusée !',
+        url: GAME_SHARE_URL,
+      });
+      const updatedRewards = normalizeShareRewards(loadShareRewards());
+      if (updatedRewards.rewards >= SHARE_REWARD_LIMIT) {
+        saveShareRewards(updatedRewards);
+        setRocketEmptyText(`Bonus partage déjà utilisé. Prochain bonus dans <span class="rocket-empty-time">${nextShareRewardWindowText()}</span>.`);
+        return;
+      }
+      updatedRewards.rewards += 1;
+      saveShareRewards(updatedRewards);
+      const updatedAt = rocketBalance.count <= 0 ? Date.now() : rocketBalance.updatedAt;
+      rocketBalance = { count: Math.min(MAX_ROCKET_BALANCE, rocketBalance.count + 1), updatedAt };
+      saveRocketBalance();
+      updateRocketBalanceUI();
+      setRocketEmptyText('Merci pour le partage ! Tu as gagné 1 rocket bonus 🚀');
+      setTimeout(hideRocketEmptyMessage, 1400);
+    } catch (err) {
+      setRocketEmptyText('Partage annulé. Aucune rocket bonus ajoutée.');
+    } finally {
+      if (shareButton) {
+        shareButton.disabled = false;
+        shareButton.textContent = 'Partager le jeu';
+      }
+    }
+  }
+
+  function showHomeShareStatus(message) {
+    const status = document.getElementById('loadStatus');
+    if (!status) return;
+    const previous = status.textContent;
+    status.textContent = message;
+    clearTimeout(showHomeShareStatus.timer);
+    showHomeShareStatus.timer = setTimeout(() => {
+      if (status.textContent === message) status.textContent = previous;
+    }, 2200);
+  }
+
+  async function shareGameFromHome() {
+    const shareData = {
+      title: 'Word Rocket',
+      text: 'Viens jouer à Word Rocket 🚀 Un jeu fun pour apprendre à prononcer les mots anglais en lançant une fusée !',
+      url: GAME_SHARE_URL,
+    };
+    const shareButton = document.getElementById('homeShareBtn');
+    if (shareButton) shareButton.disabled = true;
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        showHomeShareStatus('Merci pour le partage !');
+        return;
+      }
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(GAME_SHARE_URL);
+        showHomeShareStatus('Lien copié !');
+        return;
+      }
+      showHomeShareStatus('Copie ce lien: wordrocket.space');
+    } catch (_) {
+      showHomeShareStatus('Partage annulé');
+    } finally {
+      if (shareButton) shareButton.disabled = false;
+    }
   }
 
   function updateRocketBalanceUI() {
@@ -1097,7 +1270,7 @@
     }
     const earnedStars = starsForMistakes(state.missed.length);
     starsEl.innerHTML = Array.from({ length: earnedStars }, () =>
-      '<img class="end-star" src="assets/star.png" alt="">'
+      '<img class="end-star" src="assets/star.webp" alt="">'
     ).join('');
     starsEl.classList.remove('hidden');
     starsEl.setAttribute('aria-label', `${earnedStars} étoile${earnedStars > 1 ? 's' : ''} gagnée${earnedStars > 1 ? 's' : ''}`);
@@ -1153,13 +1326,13 @@
       card.type = 'button';
       card.className = 'level-card ' + (unlocked ? 'unlocked' : 'locked');
       card.setAttribute('aria-label', unlocked ? `Level ${levelNumber}` : `Level ${levelNumber} locked`);
-      const starIcons = Array.from({ length: stars }, () => '<img class="level-star" src="assets/star.png" alt="">').join('');
+      const starIcons = Array.from({ length: stars }, () => '<img class="level-star" src="assets/star.webp" alt="">').join('');
       card.innerHTML =
         `<div class="level-stars" aria-hidden="true">${starIcons}</div>
         <div class="level-frame">
           ${unlocked
             ? `<span class="level-number">${levelNumber}</span>`
-            : '<img class="level-lock" src="assets/cadnat.png" alt="">'}
+            : '<img class="level-lock" src="assets/cadnat.webp" alt="">'}
         </div>`;
       card.addEventListener('click', () => {
         if (unlocked) {
@@ -1238,6 +1411,12 @@
     });
   }
 
+  function setSpokenText(text = '') {
+    const el = document.getElementById('spoken');
+    el.textContent = text;
+    el.classList.toggle('empty', !text);
+  }
+
   function showStartPrompt() {
     const el = document.getElementById('startPrompt');
     if (el) { el.textContent = '🎤 Dis "START" pour décoller 🚀'; el.classList.add('show'); }
@@ -1278,7 +1457,7 @@
       return endGame(true);
     }
     state.current = newFalling();
-    document.getElementById('spoken').textContent = '';
+    setSpokenText('');
     if (speakOnAppear) speak(state.current.word);
     if (choicesEnabled) showChoices(state.current.word);
     else hideChoices();
@@ -1290,7 +1469,7 @@
     if (!state.running) return;
     const t = norm(text);
     if (!t) return;
-    document.getElementById('spoken').textContent = '🎙 ' + text;
+    setSpokenText('🎙 ' + text);
     if (!state.current) return;
     if (t === norm(state.current.word)) hitTarget();
   }
@@ -1998,26 +2177,26 @@
     busy = true;
     try { if (micVad) micVad.pause(); } catch (_) {}
     try {
-      document.getElementById('spoken').textContent = '⏳ Analyse...';
+      setSpokenText('⏳ Analyse...');
       const audioBlob = await prepareSpeechBlob(float32);
       const rawHeard = (await transcribe(audioBlob)).trim();
       const heard = normalizeSingleWordTranscript(rawHeard);
       if (!heard) return;
       if (state.awaitingStart) {
-        document.getElementById('spoken').textContent = `🎙 ${heard}`;
+        setSpokenText(`🎙 ${heard}`);
         checkWord(heard);
         return;
       }
       const expected = state.current?.word || '';
       const sc = score(heard, expected, LANGS[langIdx][0]);
-      document.getElementById('spoken').textContent = `🎙 ${heard} (${sc}%)`;
+      setSpokenText(`🎙 ${heard} (${sc}%)`);
       if (sc >= ACCEPT_THRESHOLD) checkWord(expected); // force-validate
       else if (expected) {
         showFeedback('ÉCOUTE : ' + expected.toUpperCase(), '#fc6');
         speak(expected);
       }
     } catch (e) {
-      document.getElementById('spoken').textContent = '⚠️ ' + e.message;
+      setSpokenText('⚠️ ' + e.message);
     } finally {
       busy = false;
       if (recOn && micVad && state.running) {
@@ -2061,7 +2240,7 @@
       onnxWASMBasePath: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/',
       onSpeechStart: () => {
         if (busy) return;
-        if (state.running) document.getElementById('spoken').textContent = "🎙 Je t'écoute...";
+        if (state.running) setSpokenText("🎙 Je t'écoute...");
         startSpeechRecording();
       },
       onSpeechEnd: (audio) => { handleUtterance(audio); },
@@ -2102,6 +2281,7 @@
   }
   document.getElementById('mic').addEventListener('click', () => { unlockSpeech(); enableMic(); });
   const infoDialog = document.getElementById('infoDialog');
+  const privacyDialog = document.getElementById('privacyDialog');
   const beginnerDialog = document.getElementById('beginnerDialog');
   const micPermissionDialog = document.getElementById('micPermissionDialog');
 
@@ -2179,11 +2359,21 @@
   document.getElementById('infoBtn').addEventListener('click', () => {
     infoDialog.classList.remove('hidden');
   });
+  document.getElementById('homeShareBtn').addEventListener('click', shareGameFromHome);
   document.getElementById('infoGotIt').addEventListener('click', () => {
     infoDialog.classList.add('hidden');
   });
   infoDialog.addEventListener('click', e => {
     if (e.target === infoDialog) infoDialog.classList.add('hidden');
+  });
+  document.getElementById('privacyBtn').addEventListener('click', () => {
+    privacyDialog.classList.remove('hidden');
+  });
+  document.getElementById('privacyGotIt').addEventListener('click', () => {
+    privacyDialog.classList.add('hidden');
+  });
+  privacyDialog.addEventListener('click', e => {
+    if (e.target === privacyDialog) privacyDialog.classList.add('hidden');
   });
   document.getElementById('optBeginner').addEventListener('change', e => {
     const enabled = e.target.checked;
@@ -2227,7 +2417,7 @@
   document.getElementById('levelSelectBtn').addEventListener('click', () => { unlockSpeech(); showLevelSelect(); });
   document.getElementById('levelHomeBtn').addEventListener('click', () => { unlockSpeech(); stopEverythingForHome(); });
   document.getElementById('closeRocketEmptyBtn').addEventListener('click', hideRocketEmptyMessage);
-  document.getElementById('shareRocketBtn').addEventListener('click', () => showRocketEmptyPlaceholder('share'));
+  document.getElementById('shareRocketBtn').addEventListener('click', shareGameForRocket);
   document.getElementById('buyRocketBtn').addEventListener('click', () => showRocketEmptyPlaceholder('buy'));
   document.getElementById('pauseBtn').addEventListener('click', () => { if (state.running) setPaused(!state.paused); });
   document.getElementById('restartBtn').addEventListener('click', () => { unlockSpeech(); startLevel(state.levelIdx); });

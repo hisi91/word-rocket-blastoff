@@ -128,7 +128,7 @@ Le statut est deduit de la moyenne glissante :
 | --- | --- | --- |
 | `good` | moyenne < 1000 ms | `latency-good.webp` |
 | `degraded` | moyenne < 3000 ms | `latency-medium.webp` |
-| `poor` | moyenne >= 3000 ms | `latency-bad.png` |
+| `poor` | moyenne >= 3000 ms | `latency-bad.webp` |
 | `offline` | erreur fetch, timeout ou route indisponible | `latency-off.webp` |
 
 ## Timeout et economie de credits
