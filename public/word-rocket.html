@@ -537,19 +537,14 @@
   const LEVELS_FETCH_TIMEOUT = 3500;
   function objectsForLevel(levelNumber) {
     const level = Math.max(1, Number(levelNumber) || 1);
-    if (level === 1) return 4; // Temporary ad setup: level 1 uses exactly four objects.
     if (level <= 5) return 5 + (level - 1);
     if (level <= 20) return 9 + Math.ceil((level - 5) / 2);
     return 17 + Math.ceil((level - 20) / 5);
   }
-  const TEMP_AD_LEVEL_1_OBJECTS = [
-    { word: 'apple', icon_path: 'level-1/apple.webp' },
-    { word: 'car', icon_path: 'level-1/car.webp' },
-    { word: 'banana', icon_path: 'level-1/banana.webp' },
-    { word: 'leaf', icon_path: 'level-1/leaf.webp' },
-  ];
   const DEFAULT_LEVELS = [
-    { id: 1, name: 'GROUND', total_objects: 4, folder_name: 'level-1', background_theme: 'meadow', fall_duration: 6, level_objects: TEMP_AD_LEVEL_1_OBJECTS },
+    { id: 1, name: 'GROUND', total_objects: 5, folder_name: 'level-1', background_theme: 'meadow', fall_duration: 6, level_objects: [
+      { word: 'house', icon_path: 'level-1/house.webp' }, { word: 'tree', icon_path: 'level-1/tree.webp' }, { word: 'leaf', icon_path: 'level-1/leaf.webp' }, { word: 'bird', icon_path: 'level-1/bird.webp' }, { word: 'dog', icon_path: 'level-1/dog.webp' },
+    ] },
     { id: 2, name: 'BLUE SKY', total_objects: 5, folder_name: 'level-2', background_theme: 'blue-sky', fall_duration: 5.5, level_objects: [
       { word: 'cloud', icon_path: 'level-2/cloud.webp' }, { word: 'kite', icon_path: 'level-2/kite.webp' }, { word: 'plane', icon_path: 'level-2/plane.webp' }, { word: 'rainbow', icon_path: 'level-2/rainbow.webp' }, { word: 'balloon', icon_path: 'level-2/balloon.webp' },
     ] },
@@ -603,11 +598,6 @@
 
   function defaultObjectsForLevel(levelId) {
     return DEFAULT_LEVELS.find(l => Number(l.id) === Number(levelId))?.level_objects || [];
-  }
-
-  function objectsForSelectedLevel(levelId, objects) {
-    if (Number(levelId) === 1) return TEMP_AD_LEVEL_1_OBJECTS;
-    return Array.isArray(objects) ? objects : [];
   }
 
   function getCachedLevelObjects(levelId) {
@@ -1445,11 +1435,11 @@
         objects = await fetchLevelObjects(lvl.id);
         levelObjectsCache.set(lvl.id, objects);
       }
-      objects = objectsForSelectedLevel(lvl.id, objects);
       lvl.level_objects = objects;
-      state.queue = [...objects].filter(o => o.icon_path); // only include those with generated icons
-      if (Number(lvl.id) !== 1) state.queue.sort(() => Math.random() - .5);
-      state.queue = state.queue.slice(0, objectsForLevel(state.levelIdx + 1));
+      state.queue = [...objects]
+      .filter(o => o.icon_path) // only include those with generated icons
+      .sort(()=>Math.random()-.5)
+      .slice(0, objectsForLevel(state.levelIdx + 1));
       state.totalObjects = state.queue.length;
       state.queue.forEach(o => { if (o.icon_path) loadImg(o.icon_path); });
       return true;
@@ -2462,7 +2452,6 @@
     // Warm the first level only; selected levels still load independently.
     if (LEVELS[0]) {
       fetchLevelObjects(LEVELS[0].id).then(objects => {
-        objects = objectsForSelectedLevel(LEVELS[0].id, objects);
         levelObjectsCache.set(LEVELS[0].id, objects);
         objects.map(o => o.icon_path).filter(Boolean).forEach(loadImg);
       }).catch(() => {});
